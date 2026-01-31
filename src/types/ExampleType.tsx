@@ -4,3 +4,4 @@ export default interface ExampleType {
   name: string;
   age: number;
 }
+

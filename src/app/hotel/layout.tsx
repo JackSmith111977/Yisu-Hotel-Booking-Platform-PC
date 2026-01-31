@@ -4,7 +4,7 @@ import Nav from "@/components/hotel/Nav";
 import { Layout } from "@arco-design/web-react";
 import React from "react";
 
-// 管理员页面全局布局
+// 酒店页面全局布局
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
     // 显示指定 hasSider：自定义侧边栏，Layout 无法感知
@@ -14,7 +14,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         height: "100vh",
       }}
     >
-      <Nav role="admin"/>
+      <Nav role="merchant"/>
       <Layout>
         <HeaderAvatar />
         <Layout.Content
