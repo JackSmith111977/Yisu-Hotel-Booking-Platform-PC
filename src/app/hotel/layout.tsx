@@ -1,6 +1,6 @@
 "use client";
 import HeaderAvatar from "@/components/admin/HeaderAvatar";
-import Nav from "@/components/hotel/Nav";
+import Nav from "@/components/Nav";
 import { Layout } from "@arco-design/web-react";
 import React from "react";
 
@@ -14,7 +14,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         height: "100vh",
       }}
     >
-      <Nav role="merchant"/>
+      <Nav role="hotel"/>
       <Layout>
         <HeaderAvatar />
         <Layout.Content

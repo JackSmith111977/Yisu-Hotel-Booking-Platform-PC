@@ -1,6 +1,6 @@
 "use client";
 import HeaderAvatar from "@/components/admin/HeaderAvatar";
-import Nav from "@/components/hotel/Nav";
+import Nav from "@/components/Nav";
 import { Layout } from "@arco-design/web-react";
 import React from "react";
 

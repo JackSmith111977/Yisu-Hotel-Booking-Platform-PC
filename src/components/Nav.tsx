@@ -6,6 +6,9 @@ import {
   IconCheckCircle,
   IconDashboard,
   IconSettings,
+  IconMenu,
+  IconPlusCircle,
+  IconEdit
 } from "@arco-design/web-react/icon";
 import { useRouter } from "next/navigation";
 import { UserRole } from "@/types/user";
@@ -17,9 +20,10 @@ const menuConfig = {
       { key: "3", label: "上线管理", path: "/admin/online", icon: <IconBranch /> },
       { key: "4", label: "设置选项", path: "/admin/setting", icon: <IconSettings /> },
     ],
-    merchant: [
-      { key: "1", label: "酒店信息", path: "/merchant/hotel", icon: <IconDashboard /> },
-      { key: "2", label: "订单管理", path: "/merchant/orders", icon: <IconCheckCircle /> },
+    hotel: [
+      { key: "1", label: "我的酒店", path: "/hotel", icon: <IconMenu /> },
+      // { key: "2", label: "添加酒店", path: "/hotel/add", icon: <IconPlusCircle /> },
+      { key: "2", label:"草稿箱", path: "hotel/edit", icon: <IconEdit />}
     ],
   };
 
@@ -29,7 +33,7 @@ interface NavProps {
 }
 
 export default function Nav ({ role }: NavProps) {
-    const router = useRouter();
+  const router = useRouter();
   const items = menuConfig[role];
 
   function handleClickMenuItem(key: string) {

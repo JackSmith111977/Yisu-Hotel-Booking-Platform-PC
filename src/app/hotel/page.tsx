@@ -1,3 +1,8 @@
+'use client'
+import MineTable from "@/components/hotel/MineTable";
+import HotelModal from "@/components/hotel/HotelModal";
+import { Button } from "@arco-design/web-react";
+
 export default function Home() {
     return (
       <div
@@ -7,7 +12,13 @@ export default function Home() {
           height: "100%",
         }}
       >
-        This is Hotel Page.
+        <div style={{padding:'10px 10px 0 10px'}}>
+          <HotelModal />
+        </div>
+        <div style={{padding:'10px'}}>
+          <MineTable />
+        </div>
+        
       </div>
     );
   }
