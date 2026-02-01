@@ -1,6 +1,7 @@
 "use client";
 import HeaderAvatar from "@/components/admin/HeaderAvatar";
 import Nav from "@/components/admin/Nav";
+import GlobalMessage from "@/components/global/GlobalMessage";
 import { Layout } from "@arco-design/web-react";
 import React from "react";
 
@@ -14,6 +15,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         height: "100vh",
       }}
     >
+      {/* 2. 挂载全局消息组件 (不受 CSS 布局影响，因为是 fixed 定位) */}
+      <GlobalMessage />
       <Nav />
       <Layout>
         <HeaderAvatar />
