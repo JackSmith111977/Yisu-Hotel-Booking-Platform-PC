@@ -18,11 +18,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* 2. 挂载全局消息组件 (不受 CSS 布局影响，因为是 fixed 定位) */}
       <GlobalMessage />
       <Nav />
-      <Layout>
+      <Layout style={{ overflow: "hidden" }}>
         <HeaderAvatar />
         <Layout.Content
           style={{
             background: "#252525",
+            overflow: "hidden",
           }}
         >
           {children}

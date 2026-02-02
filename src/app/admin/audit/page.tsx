@@ -2,39 +2,12 @@
 import AuditDrawer from "@/components/admin/AuditDrawer";
 import AuditTable from "@/components/admin/AuditTable";
 import RejectModal from "@/components/admin/RejectModal";
+import { MOCK_HOTEL_DATA } from "@/lib/mockdata";
 import { useMessageStore } from "@/store/useMessageStore";
 import { HotelInformation } from "@/types/HotelInformation";
-import { Button, Card, Message } from "@arco-design/web-react";
+import { Button, Card } from "@arco-design/web-react";
 import { IconRefresh } from "@arco-design/web-react/icon";
 import { useState } from "react";
-
-// 模拟数据源 (实际开发中替换为 API 调用)
-const MOCK_DATA: HotelInformation[] = [
-  {
-    id: "1001",
-    name: "上海半岛酒店",
-    merchant: "Peninsula Group",
-    submitTime: "2024-05-20 10:30",
-    status: "pending",
-    address: "上海市黄浦区中山东一路32号",
-    description: "位于外滩...",
-    images: [
-      "https://p1-arco.byteimg.com/tos-cn-i-uwbnlip3yd/cd7a1aaea8e1c5e3d26fe2591e561798.png~tplv-uwbnlip3yd-webp.webp",
-    ],
-    amenities: ["免费WiFi", "游泳池"],
-  },
-  {
-    id: "1002",
-    name: "北京王府井希尔顿",
-    merchant: "Hilton Inc.",
-    submitTime: "2024-05-19 14:20",
-    status: "approved",
-    address: "北京市东城区...",
-    description: "繁华商圈...",
-    images: [],
-    amenities: ["停车场"],
-  },
-];
 
 /**
  *
@@ -42,7 +15,7 @@ const MOCK_DATA: HotelInformation[] = [
  */
 export default function Home() {
   // 数据源
-  const [data, setData] = useState<HotelInformation[]>(MOCK_DATA);
+  const [data, setData] = useState<HotelInformation[]>(MOCK_HOTEL_DATA);
 
   // 抽屉可见性
   const [drawerVisible, setDrawerVisible] = useState(false);
@@ -65,6 +38,13 @@ export default function Home() {
   const handleOpenDrawer = (record: HotelInformation) => {
     setCurRecord(record);
     setDrawerVisible(true);
+    // TODO: 调用 API
+  };
+
+  /**
+   * 刷新逻辑
+   */
+  const handleRefresh = () => {
     // TODO: 调用 API
   };
 
@@ -115,9 +95,14 @@ export default function Home() {
       title="信息审核"
       style={{
         height: "100%",
+        overflow: "auto",
         // borderRadius: 8,
       }}
-      extra={<Button icon={<IconRefresh />}>刷新列表</Button>}
+      extra={
+        <Button icon={<IconRefresh />} onClick={handleRefresh}>
+          刷新列表
+        </Button>
+      }
     >
       {/* 酒店信息展示表格 */}
       <AuditTable data={data} onView={handleOpenDrawer} />
