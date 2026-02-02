@@ -69,7 +69,7 @@ export default function AuditTable({ isLoading, data, onView }: AuditTableProps)
         // 分页
         showTotal: true,
         sizeCanChange: true,
-        pageSize: 10,
+        defaultPageSize: 10,
         total: data.length,
       }}
     />
