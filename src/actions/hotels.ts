@@ -1,6 +1,20 @@
 import { supabase } from "@/lib/supabase";
 import { MineHotelInformationType, HotelRoomTypes } from "@/types/HotelInformation";
 
+// 删除数据
+export async function deleteHotel(id: number) {
+    const { error } = await supabase
+        .from('hotels')
+        .delete()
+        .eq('id', id);
+    
+    if (error) {
+        console.error('删除酒店失败:', error);
+        return false;
+    }
+    return true;
+}
+
 // 插入新数据
 export async function createHotels(data: MineHotelInformationType) {
     const { data: hotel, error } = await supabase
@@ -43,5 +57,3 @@ export async function getHotels() {
     console.log(data);
     return data;
 }
-
-

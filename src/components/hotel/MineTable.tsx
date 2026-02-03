@@ -2,40 +2,102 @@
 // **没有展示图片信息，是否需要添加详情按钮
 // **排序
 "use client";
-import { Table, Button, Badge } from '@arco-design/web-react';
-import { HOTEL_DATA } from '@/mocks/HotelData';
-import { useState } from 'react';
+import { Table, Button, Badge, Modal, Message } from '@arco-design/web-react';
+import { useEffect, useState } from 'react';
 import { HotelStatus } from '@/types/HotelInformation';
-import useSWR from 'swr';
-import { getHotels } from '@/actions/hotels';
+import { supabase } from '@/lib/supabase';
+import { MineHotelInformationType } from '@/types/HotelInformation';
+import dayjs from 'dayjs'
+import { Dispatch, SetStateAction } from 'react';
 
-const MineTable = () => {
+interface MineTableProps {
+    setModalVisible: Dispatch<SetStateAction<boolean>>;
+    onEdit: (record: MineHotelInformationType) => void;
+    refreshKey?: number;
+  }
+
+const MineTable = ({ setModalVisible, onEdit, refreshKey }: MineTableProps) => {
+  const [data, setData] = useState<MineHotelInformationType[]>([])  // 表单展示的酒店信息
+  const [confirmVisible, setConfirmVisible] = useState(false);    // 确认弹窗状态
+  const [Id, setId] = useState<number | null>(null);  // 存储需删除的 id
+
+  // 主表单提交状态映射
+  const statusMap: Record<HotelStatus, { text: string; status: 'success' | 'warning' | 'error' | 'default' }> = {
+    draft: { text: '草稿', status: 'default' },
+    pending: { text: '待审核', status: 'warning' },
+    approved: { text: '已发布', status: 'success' },
+    rejected: { text: '已拒绝', status: 'error' },
+    offline: { text: '已下线', status: 'default' },
+  };
+
+  // 请求数据并更新状态
+  const fetchData = async () => {
+    const { data, error } = await supabase
+        .from('hotels')
+        .select('*, room_types(*)');
+    setData(data || []);
+
+    if (error) {
+        console.error(error);
+        return [];  // 出错时返回空数组
+    }
+    console.log(data);
+    return data;
+  }
+
+  // 点击删除按钮时，同时设置 id 和打开弹窗
+  const handleDelete = (id: number) => {
+    setId(id);
+    setConfirmVisible(true);
+  };
+
+  // 确认删除列表某一项
+  const handleConfirmDelete = async () => {
+    const { error } = await supabase
+        .from('hotels')
+        .delete()
+        .eq('id', Id);
+      
+    if (error) {
+      Message.error('删除失败');
+      console.error(error);
+      return;
+    }
+    
+    Message.success('删除成功');
+    fetchData();  // 刷新列表
+    setConfirmVisible(false);
+  }
+
   // 主表格 - 酒店列表
   const hotelColumns = [
     {
       title: '酒店名称',
       dataIndex: 'name_zh',
     },
-    {
-      title: '英文名称',
-      dataIndex: 'name_en',
-    },
+    // {
+    //   title: '英文名称',
+    //   dataIndex: 'name_en',
+    // },
     {
       title: '地址',
       dataIndex: 'address',
+      render: (_: unknown, record: MineHotelInformationType) => {
+        return `${JSON.parse(record.region).filter((item: string) => item !== '市辖区').join('') || ''}${record.address || ''}`;
+      },
     },
     {
       title: '星级',
       dataIndex: 'star_rating',
     },
-    {
-      title: '联系电话',
-      dataIndex: 'contact_phone',
-    },
-    {
-      title: '开业时间',
-      dataIndex: 'opening_date',
-    },
+    // {
+    //   title: '联系电话',
+    //   dataIndex: 'contact_phone',
+    // },
+    // {
+    //   title: '开业时间',
+    //   dataIndex: 'opening_date',
+    // },
     {
       title: '状态',
       dataIndex: 'status',
@@ -47,19 +109,23 @@ const MineTable = () => {
     {
       title: '更新时间',
       dataIndex: 'updated_at',
+      render: (time: string) => dayjs(time).format('YYYY-MM-DD HH:mm')
     },
     {
-      title: '操作',
+      title: '',
       dataIndex: 'op',
-      width: '20px',
-      render: (_, record) => (
-        <div>
-          <Button type='primary' style={{marginBottom:'5px'}}>
+      render: (_: unknown, record: MineHotelInformationType) => (
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <Button 
+            type='primary' size="small"
+            onClick={() => onEdit(record)}            
+          >
             编辑
           </Button>
           <Button 
-            // onClick={() => removeRow(record.id)} 
-            type='primary' status='danger'>
+            type='primary' status='danger' size="small"
+            onClick={() => handleDelete(record.id)}
+          >
             删除
           </Button>
         </div>
@@ -91,33 +157,41 @@ const MineTable = () => {
     },
   ];
 
-  // 主表单提交状态映射
-  const statusMap: Record<HotelStatus, { text: string; status: 'success' | 'warning' | 'error' | 'default' }> = {
-    draft: { text: '草稿', status: 'default' },
-    pending_review: { text: '待审核', status: 'warning' },
-    published: { text: '已发布', status: 'success' },
-    rejected: { text: '已拒绝', status: 'error' },
-    offline: { text: '已下线', status: 'default' },
-  };
+  useEffect(() => {
+    const loadData = async () => {
+      await fetchData();
+    };
+    loadData();
+  }, [refreshKey])
 
-  // const [data, setData] = useState(HOTEL_DATA)  // 表单展示的酒店信息  
-  const { data = [] } = useSWR('hotels', getHotels);  //表单初始酒店信息渲染
-
-  // function removeRow(key: string | number) {
-  //   setData(data.filter((item) => item.id !== key));
-  // }
 
   return (
-    <Table 
-      rowKey="id"
-      indentSize={55}
-      columns={hotelColumns} 
-      data={data} 
-      noDataElement={<div>No data available</div>}
-      expandedRowRender={cur => (
-        <Table rowKey="id" columns={roomColumns} data={cur.room_types} pagination={false} />
-      )} 
-    />
+    <>
+      <Table 
+        rowKey="id"
+        indentSize={55}
+        columns={hotelColumns} 
+        data={data} 
+        noDataElement={<div>No data available</div>}
+        expandedRowRender={cur => (
+          <Table rowKey="id" columns={roomColumns} data={cur.room_types} pagination={false} style={{ backgroundColor: '#fff' }}/>
+        )} 
+      />
+      {/* 确认删除弹窗 */}
+      <Modal
+        visible={confirmVisible}
+        title="确认删除"
+        onCancel={() => setConfirmVisible(false)}
+        onOk={handleConfirmDelete}
+        okText="删除"
+        cancelText="取消"
+        okButtonProps={{ status: 'danger' }}
+        simple
+      >
+        <p style={{ margin: 0 }}>确定要删除这个酒店吗？此操作不可恢复。</p>
+      </Modal>
+    </>
+    
   );
 };
 

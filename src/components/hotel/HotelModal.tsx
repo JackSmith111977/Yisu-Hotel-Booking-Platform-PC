@@ -16,13 +16,20 @@ import {
 } from '@arco-design/web-react';
 import { IconPlus, IconDelete } from '@arco-design/web-react/icon';
 import pcaData from 'china-division/dist/pca.json'
-import { HotelRoomTypes } from '@/types/HotelInformation';
+import { MineHotelInformationType, HotelRoomTypes, AddressDataType } from '@/types/HotelInformation';
+import { Dispatch, SetStateAction, useEffect } from 'react';
 
 const FormItem = Form.Item;
 const { Row, Col } = Grid;
 
-const HotelModal = () => {
-    const [visible, setVisible] = useState(false);
+interface HotelModalProps {
+    modalVisible: boolean;
+    setModalVisible: Dispatch<SetStateAction<boolean>>;
+    initialData?: MineHotelInformationType | null;
+    onCreated?: () => void;
+}
+
+const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: HotelModalProps) => {
     const [confirmLoading, setConfirmLoading] = useState(false);
     const [confirmVisible, setConfirmVisible] = useState(false);    // 确认弹窗状态
     const [form] = Form.useForm();
@@ -36,11 +43,12 @@ const HotelModal = () => {
             const hotelData = {
                 name_zh: values.nameZh,
                 name_en: values.nameEn,
-                address: values.region + values.address,
+                region: values.region,
+                address: values.address,
                 star_rating: values.starRating,
                 opening_date: values.openingDate,
                 contact_phone: values.contactPhone,
-                status: "draft" as const,
+                status: "pending" as const,
             };
             
             console.log('提交酒店数据:', hotelData);
@@ -60,10 +68,11 @@ const HotelModal = () => {
                     }));
                     
                     console.log('提交房型数据:', roomTypesData);
-                    await createRoomTypes(roomTypesData);  // 需要新建这个函数
+                    await createRoomTypes(roomTypesData);
                 }
                 
-                setVisible(false);
+                setModalVisible(false);                
+                onCreated && onCreated();   // 通知父组件已创建成功以触发刷新
                 form.resetFields();
             }            
         } catch (error) {
@@ -83,7 +92,7 @@ const HotelModal = () => {
     };
 
     // 地址选择函数
-    function transformData(data) {
+    function transformData(data: AddressDataType) {
         return Object.entries(data).map(([province, cities]) => ({
           label: province,
           value: province,
@@ -104,39 +113,45 @@ const HotelModal = () => {
         if (form.getTouchedFields().length > 0) {
             setConfirmVisible(true);  // 显示确认弹窗
         } else {
-            setVisible(false);
+            setModalVisible(false);
         }
     }
 
     // 确认放弃更改
     function handleConfirmDiscard() {
-        form.resetFields();
-        setConfirmVisible(false);
-        setVisible(false);
+        form.resetFields();     
+        setConfirmVisible(false)   
+        setModalVisible(false);
     }
 
+    useEffect(() => {
+        if (modalVisible && initialData) {
+          // 编辑模式填充数据
+          form.setFieldsValue({
+            nameZh: initialData.name_zh,
+            nameEn: initialData.name_en,
+            region: JSON.parse(initialData.region),
+            address: initialData.address,
+            starRating: initialData.star_rating,
+            openingDate: initialData.opening_date,
+            contactPhone: initialData.contact_phone,
+            roomTypes: initialData.room_types,
+          });
+        } else if (modalVisible) {
+          // 新建模式清空表单
+          form.resetFields();
+        }
+      }, [modalVisible, initialData, form]);
+
     return (
-        <div>
-            <Button 
-                onClick={() => {
-                    setVisible(true);
-                }} 
-                type='primary' 
-                status='success'
-            >
-                添加酒店
-            </Button>
+        <div>            
             <Modal
-                title='添加酒店'
+                title={initialData ? '编辑酒店' : '添加酒店'}
                 style={{ width: '60%' }}
-                visible={visible}
+                visible={modalVisible}
                 onOk={onOkay}
                 confirmLoading={confirmLoading}
-                onCancel={() => {
-                    // setVisible(false);
-                    handleCancel();
-                    // form.resetFields();
-                }}
+                onCancel={() => handleCancel()}
             >
                 <Form
                     {...formItemLayout}
