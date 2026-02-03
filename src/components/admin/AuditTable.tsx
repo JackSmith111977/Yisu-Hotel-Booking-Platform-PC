@@ -15,8 +15,20 @@ export default function AuditTable({ isLoading, data, onView }: AuditTableProps)
     { title: "提交商户", dataIndex: "merchantId" },
     {
       title: "提交时间",
-      dataIndex: "submitTime",
+      dataIndex: "updatedAt",
       sorter: (a: HotelInformation, b: HotelInformation) => a.updatedAt.localeCompare(b.updatedAt),
+      // 新增：自定义时间格式化逻辑
+      render: (text: string) => {
+        if (!text) return "-";
+        const date = new Date(text);
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, "0");
+        const day = date.getDate().toString().padStart(2, "0");
+        const hours = date.getHours().toString().padStart(2, "0");
+        const minutes = date.getMinutes().toString().padStart(2, "0");
+        const seconds = date.getSeconds().toString().padStart(2, "0");
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+      },
     },
     {
       title: "审核状态",

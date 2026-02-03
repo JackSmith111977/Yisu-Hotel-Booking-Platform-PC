@@ -1,15 +1,19 @@
 /**
  * @description: 酒店信息
  * @interface HotelInformation
- * @property {string} id - 酒店id
- * @property {string} name - 酒店名称
- * @property {string} merchant - 商家id
- * @property {string} submitTime - 提交时间
- * @property {"pending" | "approved" | "rejected" | "offline"} status - 审核状态
- * @property {string} address - 酒店地址
- * @property {string} description - 酒店描述
- * @property {string[]} images - 酒店图片
- * @property {string[]} amenities - 酒店设施
+ * @property {string} id 酒店id
+ * @property {string} nameZh 酒店中文名称
+ * @property {string} nameEn 酒店英文名称
+ * @property {string} address 酒店地址
+ * @property {number} starRating 酒店星级
+ * @property {string} openingDate 酒店开业时间
+ * @property {string} contactPhone 酒店联系电话
+ * @property {string} coverImage 酒店封面图片
+ * @property {string} status 酒店审核状态
+ * @property {string} merchantId 商户id
+ * @property {string} updatedAt 酒店更新时间
+ * @property {string} rejectedReason 拒绝理由
+ * @property {string[]} images 酒店图片
  */
 export interface HotelInformation {
   /**

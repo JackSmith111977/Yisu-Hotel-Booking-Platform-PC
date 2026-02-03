@@ -1,16 +1,17 @@
 "use client";
 
+import { fetchHotelsList } from "@/actions/admin_service";
 import OnlineTable from "@/components/admin/OnlineTable";
 import { MOCK_HOTEL_DATA } from "@/lib/mockdata";
 import { useMessageStore } from "@/store/useMessageStore";
 import { HotelInformation } from "@/types/HotelInformation";
 import { Button, Card, Input, Tabs } from "@arco-design/web-react";
 import { IconRefresh, IconSearch } from "@arco-design/web-react/icon";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export default function Home() {
   // 酒店数据
-  const [data, setData] = useState<HotelInformation[]>(MOCK_HOTEL_DATA);
+  const [data, setData] = useState<HotelInformation[]>([]);
   // 当前标签页
   const [activeTab, setActiveTab] = useState("approved");
   // 加载状态
@@ -20,6 +21,28 @@ export default function Home() {
 
   const showMessage = useMessageStore((state) => state.showMessage);
 
+  /**
+   * 加载数据逻辑
+   */
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const res = await fetchHotelsList();
+      setData(res);
+    } catch (error: unknown) {
+      console.log("获取酒店列表失败", error);
+      showMessage("error", error instanceof Error ? error.message : "数据加载失败");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * 页面加载时触发
+   */
+  useEffect(() => {
+    loadData();
+  }, []);
   /**
    * 刷新数据逻辑
    */

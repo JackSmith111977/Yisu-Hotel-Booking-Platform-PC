@@ -1,8 +1,8 @@
 "use client";
+import { fetchHotelsList } from "@/actions/admin_service";
 import AuditDrawer from "@/components/admin/AuditDrawer";
 import AuditTable from "@/components/admin/AuditTable";
 import RejectModal from "@/components/admin/RejectModal";
-import { MOCK_HOTEL_DATA } from "@/lib/mockdata";
 import { useMessageStore } from "@/store/useMessageStore";
 import { HotelInformation } from "@/types/HotelInformation";
 import { Button, Card } from "@arco-design/web-react";
@@ -15,7 +15,10 @@ import { useEffect, useState } from "react";
  */
 export default function Home() {
   // 数据源
-  const [data, setData] = useState<HotelInformation[]>(MOCK_HOTEL_DATA);
+  const [data, setData] = useState<HotelInformation[]>([]);
+
+  // 表格加载状态
+  const [loading, setLoading] = useState(false);
 
   // 抽屉可见性
   const [drawerVisible, setDrawerVisible] = useState(false);
@@ -30,6 +33,29 @@ export default function Home() {
 
   // 获取全局消息订阅
   const showMessage = useMessageStore((state) => state.showMessage);
+
+  /**
+   * 获取酒店列表逻辑
+   */
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const res = await fetchHotelsList();
+      setData(res);
+    } catch (error: unknown) {
+      console.log("获取酒店列表失败", error);
+      showMessage("error", error instanceof Error ? error.message : "数据加载失败");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * 页面加载时获取数据
+   */
+  useEffect(() => {
+    loadData();
+  }, []);
 
   /**
    * 打开抽屉逻辑
@@ -105,7 +131,7 @@ export default function Home() {
       }
     >
       {/* 酒店信息展示表格 */}
-      <AuditTable data={data} onView={handleOpenDrawer} />
+      <AuditTable data={data} onView={handleOpenDrawer} isLoading={loading} />
 
       {/* 酒店详细审核页 */}
       <AuditDrawer

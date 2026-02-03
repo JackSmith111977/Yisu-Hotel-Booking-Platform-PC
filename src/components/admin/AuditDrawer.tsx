@@ -37,6 +37,7 @@ export default function AuditDrawer({
   if (!data) return null;
 
   const isPending = data.status === "pending";
+  const hasCoverImage = data.coverImage;
 
   // 定义底部按钮节点
   const footerNode = (
@@ -68,15 +69,20 @@ export default function AuditDrawer({
     >
       <Space direction="vertical">
         {/* 新增：封面图展示 */}
-        <div style={{ width: "100%", height: 200, overflow: "hidden", borderRadius: 4 }}>
-          <Image
-            src={data.coverImage}
-            alt="Cover"
-            width="100%"
-            height={200}
-            style={{ objectFit: "cover" }}
-          />
-        </div>
+        {hasCoverImage ? (
+          <div style={{ width: "100%", height: 200, overflow: "hidden", borderRadius: 4 }}>
+            <Image
+              src={data.coverImage}
+              alt="Cover"
+              width="100%"
+              height={200}
+              style={{ objectFit: "cover" }}
+            />
+          </div>
+        ) : (
+          <Typography.Text type="secondary">暂无封面图</Typography.Text>
+        )}
+
         {/* 基础信息 */}
         <Descriptions
           column={1}
