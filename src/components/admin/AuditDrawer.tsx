@@ -5,6 +5,7 @@ import {
   Divider,
   Drawer,
   Image,
+  Rate,
   Space,
   Tag,
   Typography,
@@ -36,75 +37,111 @@ export default function AuditDrawer({
   if (!data) return null;
 
   const isPending = data.status === "pending";
+  const hasCoverImage = data.coverImage;
+
+  // 定义底部按钮节点
+  const footerNode = (
+    <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
+      <Button status="danger" onClick={onReject} icon={<IconClose />}>
+        驳回申请
+      </Button>
+      <Button type="primary" status="success" onClick={onApprove} icon={<IconCheck />}>
+        通过审核
+      </Button>
+    </div>
+  );
+
   return (
     // 审核抽屉
-    <Drawer title={data?.name} visible={visible} onCancel={onClose} footer={null}>
+    <Drawer
+      title={
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <Typography.Text style={{ fontSize: 16, fontWeight: 600 }}>{data.nameZh}</Typography.Text>
+          <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+            {data.nameEn}
+          </Typography.Text>
+        </div>
+      }
+      visible={visible}
+      onCancel={onClose}
+      footer={isPending ? footerNode : null}
+      width={480}
+    >
       <Space direction="vertical">
+        {/* 新增：封面图展示 */}
+        {hasCoverImage ? (
+          <div style={{ width: "100%", height: 200, overflow: "hidden", borderRadius: 4 }}>
+            <Image
+              src={data.coverImage}
+              alt="Cover"
+              width="100%"
+              height={200}
+              style={{ objectFit: "cover" }}
+            />
+          </div>
+        ) : (
+          <Typography.Text type="secondary">暂无封面图</Typography.Text>
+        )}
+
         {/* 基础信息 */}
         <Descriptions
           column={1}
-          title="基础信息"
+          title="注册信息"
           data={[
-            { label: "提交商户", value: data?.merchant },
-            { label: "酒店名称", value: data?.name },
-            { label: "提交时间", value: data?.submitTime },
+            { label: "酒店ID", value: data?.id },
+            { label: "商户ID", value: data?.merchantId },
+            { label: "更新时间", value: new Date(data.updatedAt).toLocaleString() },
+            {
+              label: "当前状态",
+              value: <Tag color={data.status === "approved" ? "green" : "red"}>{data.status}</Tag>,
+            },
           ]}
         />
 
         <Divider style={{ margin: "12px 0" }} />
 
-        {/* 图片预览 */}
+        {/* 详细属性 (星级、电话、开业时间) */}
+        <Descriptions
+          column={1}
+          title="酒店详情"
+          labelStyle={{ width: 100, color: "var(--color-text-3)" }}
+          data={[
+            {
+              label: "星级标准",
+              value: <Rate readonly defaultValue={data.starRating} style={{ fontSize: 14 }} />,
+            },
+            { label: "联系电话", value: data.contactPhone },
+            { label: "开业日期", value: data.openingDate },
+            { label: "详细地址", value: data.address },
+          ]}
+        />
+
+        <Divider style={{ margin: "12px 0" }} />
+
+        {/* 图集预览 */}
         <div>
-          <Typography.Title heading={6}>图片预览</Typography.Title>
+          <Typography.Title heading={6} style={{ marginTop: 0 }}>
+            图集预览
+          </Typography.Title>
           <Image.PreviewGroup>
             <Space wrap>
-              {data && data.images.length > 0 ? (
-                data?.images.map((image, index) => (
+              {data.images && data.images.length > 0 ? (
+                data.images.map((img, idx) => (
                   <Image
-                    key={index}
-                    src={image}
+                    key={idx}
+                    src={img}
                     width={100}
-                    height={100}
-                    style={{ objectFit: "cover" }}
-                    alt={`hotel_image-${index}`}
+                    height={80}
+                    style={{ objectFit: "cover", borderRadius: 4 }}
+                    alt={`image-${idx}`}
                   />
                 ))
               ) : (
-                <span style={{ color: "#999", padding: 10 }}>暂无图片</span>
+                <Typography.Text type="secondary">暂无更多图片</Typography.Text>
               )}
             </Space>
           </Image.PreviewGroup>
         </div>
-
-        <Divider style={{ margin: "12px 0" }} />
-
-        {/* 设施信息 */}
-        <div>
-          <Typography.Title heading={6}>设施信息</Typography.Title>
-          <Space wrap>
-            {data &&
-              data.amenities.length > 0 &&
-              data.amenities.map((amenity, index) => <Tag key={index}>{amenity}</Tag>)}
-          </Space>
-        </div>
-
-        {/* 操作按钮 */}
-        {isPending && (
-          <Space
-            wrap
-            style={{
-              position: "absolute",
-              bottom: 0,
-            }}
-          >
-            <Button status="danger" onClick={onReject} icon={<IconClose />}>
-              驳回申请
-            </Button>
-            <Button type="primary" status="success" onClick={onApprove} icon={<IconCheck />}>
-              通过审核
-            </Button>
-          </Space>
-        )}
       </Space>
     </Drawer>
   );

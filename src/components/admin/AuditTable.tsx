@@ -11,13 +11,24 @@ interface AuditTableProps {
 export default function AuditTable({ isLoading, data, onView }: AuditTableProps) {
   const columns = [
     { title: "ID", dataIndex: "id", width: 80 },
-    { title: "酒店名称", dataIndex: "name", width: 220 },
-    { title: "提交商户", dataIndex: "merchant" },
+    { title: "酒店名称", dataIndex: "nameZh", width: 220 },
+    { title: "提交商户", dataIndex: "merchantId" },
     {
       title: "提交时间",
-      dataIndex: "submitTime",
-      sorter: (a: HotelInformation, b: HotelInformation) =>
-        a.submitTime.localeCompare(b.submitTime),
+      dataIndex: "updatedAt",
+      sorter: (a: HotelInformation, b: HotelInformation) => a.updatedAt.localeCompare(b.updatedAt),
+      // 新增：自定义时间格式化逻辑
+      render: (text: string) => {
+        if (!text) return "-";
+        const date = new Date(text);
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, "0");
+        const day = date.getDate().toString().padStart(2, "0");
+        const hours = date.getHours().toString().padStart(2, "0");
+        const minutes = date.getMinutes().toString().padStart(2, "0");
+        const seconds = date.getSeconds().toString().padStart(2, "0");
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+      },
     },
     {
       title: "审核状态",
