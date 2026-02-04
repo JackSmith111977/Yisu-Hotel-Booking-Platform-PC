@@ -1,18 +1,17 @@
 import { useState } from 'react';
-import { createHotels, createRoomTypes } from '@/actions/hotels';
+import { createHotels, createRoomTypes, updateHotel, replaceRoomTypes } from '@/actions/hotels';
 import { 
     Form, 
     Input, 
     Modal, 
     Button, 
-    Select, 
     DatePicker, 
     InputNumber,
-    Space,
     Card,
     Grid,
     Rate,
-    Cascader
+    Cascader,
+    Message
 } from '@arco-design/web-react';
 import { IconPlus, IconDelete } from '@arco-design/web-react/icon';
 import pcaData from 'china-division/dist/pca.json'
@@ -39,8 +38,8 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
             const values = await form.validate();
             setConfirmLoading(true);
     
-            // 整理酒店数据（不包含 room_types）
-            const hotelData = {
+            // 整理酒店数据（不包含 room_types）。编辑时保留原有 status，创建时设置为 pending。
+            const hotelData: Partial<MineHotelInformationType> = {
                 name_zh: values.nameZh,
                 name_en: values.nameEn,
                 region: values.region,
@@ -48,35 +47,67 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                 star_rating: values.starRating,
                 opening_date: values.openingDate,
                 contact_phone: values.contactPhone,
-                status: "pending" as const,
+                ...(initialData ? { } : { status: "pending" as const }),
             };
-            
+
             console.log('提交酒店数据:', hotelData);
-            
-            // 添加酒店数据
-            const hotel = await createHotels(hotelData);            
-            if (hotel) {
-                // 关联酒店 ID 并创建房型
-                if (values.roomTypes?.length > 0) {
-                    const roomTypesData = values.roomTypes.map((room: HotelRoomTypes) => ({
-                        hotel_id: hotel.id,  // 使用返回的酒店 ID
-                        name: room.name,
-                        price: room.price,
-                        quantity: room.quantity,
-                        size: room.size,
-                        description: room.description,
-                    }));
-                    
-                    console.log('提交房型数据:', roomTypesData);
-                    await createRoomTypes(roomTypesData);
+
+            if (initialData) {
+                // 编辑模式：更新酒店 + 替换房型
+                const hotel = await updateHotel(initialData.id as number, {
+                    ...hotelData,
+                });
+
+                if (hotel) {
+                    if (values.roomTypes?.length > 0) {
+                        const roomTypesData = values.roomTypes.map((room: HotelRoomTypes) => ({
+                            name: room.name,
+                            price: room.price,
+                            quantity: room.quantity,
+                            size: room.size,
+                            description: room.description,
+                        }));
+                        console.log('替换房型数据:', roomTypesData);
+                        await replaceRoomTypes(initialData.id as number, roomTypesData);
+                    } else {
+                        // 没有房型则清空
+                        await replaceRoomTypes(initialData.id as number, []);
+                    }
+
+                    Message.success('更新成功');
+                    setModalVisible(false);
+                    if (onCreated) onCreated(); // 通知父组件刷新
+                    form.resetFields();
+                } else {
+                    Message.error('更新失败');
                 }
-                
-                setModalVisible(false);                
-                onCreated && onCreated();   // 通知父组件已创建成功以触发刷新
-                form.resetFields();
-            }            
+            } else {
+                // 创建模式
+                const hotel = await createHotels(hotelData as MineHotelInformationType);
+                if (hotel) {
+                    // 关联酒店 ID 并创建房型
+                    if (values.roomTypes?.length > 0) {
+                        const roomTypesData = values.roomTypes.map((room: HotelRoomTypes) => ({
+                            hotel_id: hotel.id,  // 使用返回的酒店 ID
+                            name: room.name,
+                            price: room.price,
+                            quantity: room.quantity,
+                            size: room.size,
+                            description: room.description,
+                        }));
+                        
+                        console.log('提交房型数据:', roomTypesData);
+                        await createRoomTypes(roomTypesData);
+                    }
+                    
+                    setModalVisible(false);
+                    if (onCreated) onCreated();   // 通知父组件已创建成功以触发刷新
+                    form.resetFields();
+                }
+            }
         } catch (error) {
-            console.error('创建失败:', error);
+            console.error('创建/更新失败:', error);
+            Message.error('保存失败');
         } finally {
             setConfirmLoading(false);
         }

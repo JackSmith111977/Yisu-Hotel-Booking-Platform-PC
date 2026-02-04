@@ -5,18 +5,18 @@
 import { Table, Button, Badge, Modal, Message } from '@arco-design/web-react';
 import { useEffect, useState } from 'react';
 import { HotelStatus } from '@/types/HotelInformation';
-import { supabase } from '@/lib/supabase';
+import { deleteHotel, getHotels } from '@/actions/hotels';
 import { MineHotelInformationType } from '@/types/HotelInformation';
 import dayjs from 'dayjs'
 import { Dispatch, SetStateAction } from 'react';
 
 interface MineTableProps {
-    setModalVisible: Dispatch<SetStateAction<boolean>>;
     onEdit: (record: MineHotelInformationType) => void;
     refreshKey?: number;
+    statusFilter: boolean;
   }
 
-const MineTable = ({ setModalVisible, onEdit, refreshKey }: MineTableProps) => {
+const MineTable = ({ onEdit, refreshKey, statusFilter }: MineTableProps) => {
   const [data, setData] = useState<MineHotelInformationType[]>([])  // 表单展示的酒店信息
   const [confirmVisible, setConfirmVisible] = useState(false);    // 确认弹窗状态
   const [Id, setId] = useState<number | null>(null);  // 存储需删除的 id
@@ -32,38 +32,29 @@ const MineTable = ({ setModalVisible, onEdit, refreshKey }: MineTableProps) => {
 
   // 请求数据并更新状态
   const fetchData = async () => {
-    const { data, error } = await supabase
-        .from('hotels')
-        .select('*, room_types(*)');
+    const allData = await getHotels();
+    const data = allData?.filter(item => statusFilter  ? item.status !== 'draft' : item.status === 'draft')
+    console.log("data", data);
     setData(data || []);
-
-    if (error) {
-        console.error(error);
-        return [];  // 出错时返回空数组
-    }
-    console.log(data);
     return data;
   }
 
   // 点击删除按钮时，同时设置 id 和打开弹窗
-  const handleDelete = (id: number) => {
+  const handleDelete = (id?: number) => {
+    if (!id) return;
     setId(id);
     setConfirmVisible(true);
   };
 
   // 确认删除列表某一项
   const handleConfirmDelete = async () => {
-    const { error } = await supabase
-        .from('hotels')
-        .delete()
-        .eq('id', Id);
-      
-    if (error) {
+    if (!Id) return;
+    const ok = await deleteHotel(Id as number);
+    if (!ok) {
       Message.error('删除失败');
-      console.error(error);
       return;
     }
-    
+
     Message.success('删除成功');
     fetchData();  // 刷新列表
     setConfirmVisible(false);
@@ -172,7 +163,7 @@ const MineTable = ({ setModalVisible, onEdit, refreshKey }: MineTableProps) => {
         indentSize={55}
         columns={hotelColumns} 
         data={data} 
-        noDataElement={<div>No data available</div>}
+        noDataElement={<div>loading...</div>}
         expandedRowRender={cur => (
           <Table rowKey="id" columns={roomColumns} data={cur.room_types} pagination={false} style={{ backgroundColor: '#fff' }}/>
         )} 

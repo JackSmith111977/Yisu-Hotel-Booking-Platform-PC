@@ -22,8 +22,7 @@ const menuConfig = {
     ],
     hotel: [
       { key: "1", label: "我的酒店", path: "/hotel", icon: <IconMenu /> },
-      // { key: "2", label: "添加酒店", path: "/hotel/add", icon: <IconPlusCircle /> },
-      { key: "2", label:"草稿箱", path: "hotel/edit", icon: <IconEdit />}
+      { key: "2", label:"草稿箱", path: "hotel/draft", icon: <IconEdit />}
     ],
   };
 
