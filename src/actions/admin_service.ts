@@ -23,6 +23,10 @@ interface HotelDBRow {
   album: string[] | null;
 }
 
+/**
+ * 获取所有酒店信息
+ * @returns {Promise<HotelInformation[]>} - 所有酒店信息
+ */
 export async function fetchHotelsList(): Promise<HotelInformation[]> {
   // 获取所有酒店信息，并捕获错误
   const { data, error } = await supabase_admin
@@ -79,4 +83,66 @@ export async function fetchHotelsList(): Promise<HotelInformation[]> {
       // amenities: [],
     };
   });
+}
+
+/**
+ * 审核通过酒店
+ * @param {string} hotelId - 要审核酒店 ID
+ * @returns {Promise<void>} - 无返回值
+ */
+export async function approveHotel(hotelId: string): Promise<void> {
+  // 1. 验证输入参数
+  if (!hotelId) {
+    throw new Error("酒店 ID 不能为空");
+  }
+
+  // 2. 更新数据库
+  const { error } = await supabase_admin
+    .from("hotels")
+    .update({
+      status: "approved",
+      updated_at: new Date().toISOString(),
+      // 清空拒绝理由
+      rejected_reason: null,
+    })
+    .eq("id", parseInt(hotelId));
+
+  // 3. 错误处理
+  if (error) {
+    console.error("审核通过失败", error);
+    throw new Error(`审核通过失败: ${error.message}`);
+  }
+}
+
+export async function rejectHotel(hotelId: string, reason: string): Promise<void> {
+  // 1. 验证输入参数
+  if (!hotelId) {
+    throw new Error("酒店 ID 不能为空");
+  }
+  if (!reason) {
+    throw new Error("拒绝理由不能为空");
+  }
+
+  // 优化 1. 先查询当前状态
+  const { data: hotel, error: fetchError } = await supabase_admin
+    .from("hotels")
+    .select("status")
+    .eq("id", parseInt(hotelId))
+    .single(); // 返回单条数据
+
+  if (fetchError) throw new Error(`查询酒店状态失败: ${fetchError.message}`);
+  if (!hotel) throw new Error("酒店不存在");
+  if (hotel.status !== "pending") throw new Error("酒店已审核");
+
+  // 2. 更新数据库
+  const { error } = await supabase_admin
+    .from("hotels")
+    .update({ status: "rejected", updated_at: new Date().toISOString(), rejected_reason: reason })
+    .eq("id", parseInt(hotelId));
+
+  // 3. 错误处理
+  if (error) {
+    console.error("驳回酒店失败", error);
+    throw new Error(`驳回酒店失败: ${error.message}`);
+  }
 }

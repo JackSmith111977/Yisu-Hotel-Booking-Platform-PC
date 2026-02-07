@@ -2,7 +2,6 @@
 
 import { fetchHotelsList } from "@/actions/admin_service";
 import OnlineTable from "@/components/admin/OnlineTable";
-import { MOCK_HOTEL_DATA } from "@/lib/mockdata";
 import { useMessageStore } from "@/store/useMessageStore";
 import { HotelInformation } from "@/types/HotelInformation";
 import { Button, Card, Input, Tabs } from "@arco-design/web-react";
@@ -25,6 +24,9 @@ export default function Home() {
    * 加载数据逻辑
    */
   const loadData = async () => {
+    // 防止重复请求
+    if (loading) return;
+
     setLoading(true);
     try {
       const res = await fetchHotelsList();
@@ -46,8 +48,12 @@ export default function Home() {
   /**
    * 刷新数据逻辑
    */
-  const handleRefresh = () => {
-    // TODO: 调用 API
+  const handleRefresh = async () => {
+    // 调用已有的 loadData 方法
+    await loadData();
+
+    // 显示成功提示
+    showMessage("success", "数据刷新成功");
   };
 
   /**
@@ -90,7 +96,7 @@ export default function Home() {
       title="酒店上线管理"
       style={{ height: "100%" }}
       extra={
-        <Button icon={<IconRefresh />} onClick={handleRefresh}>
+        <Button icon={<IconRefresh />} onClick={handleRefresh} loading={loading} disabled={loading}>
           刷新数据
         </Button>
       }
