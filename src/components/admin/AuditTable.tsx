@@ -38,11 +38,12 @@ export default function AuditTable({ isLoading, data, onView }: AuditTableProps)
         // 使用状态映射表，将酒店信息的状态映射为 Badge 组件字面量
         const statusMap: Record<
           string,
-          { status: "processing" | "success" | "error"; text: string }
+          { status: "processing" | "success" | "error" | "default"; text: string }
         > = {
           pending: { status: "processing", text: "待审核" },
           approved: { status: "success", text: "已通过" },
           rejected: { status: "error", text: "已驳回" },
+          offline: { status: "default", text: "已下线" },
         };
         // 默认状态
         const config = statusMap[status] || statusMap.pending;
@@ -53,6 +54,7 @@ export default function AuditTable({ isLoading, data, onView }: AuditTableProps)
         { text: "待审核", value: "pending" },
         { text: "已通过", value: "approved" },
         { text: "已驳回", value: "rejected" },
+        { text: "已下线", value: "offline" },
       ],
       // 筛选函数
       onFilter: (value: string, record: HotelInformation) => record.status === value,

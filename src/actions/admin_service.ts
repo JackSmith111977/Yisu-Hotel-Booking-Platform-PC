@@ -175,3 +175,49 @@ export async function offlineHotel(hotelId: string): Promise<void> {
     throw new Error(`下线酒店失败: ${error.message}`);
   }
 }
+
+export async function fetchDashboardStats() {
+  // 1. 并行查询酒店状态统计
+  const [pending, approved, rejected, offline] = await Promise.all([
+    supabase_admin
+      .from("hotels")
+      // exact 模式确保返回准确的计数
+      // head: true 只返回计数结果，不返回数据
+      .select("*", { count: "exact", head: true })
+      .eq("status", "pending"),
+    supabase_admin
+      .from("hotels")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "approved"),
+    supabase_admin
+      .from("hotels")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "rejected"),
+    supabase_admin
+      .from("hotels")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "offline"),
+  ]);
+
+  // 2. 错误处理
+  if (pending.error || approved.error || rejected.error || offline.error) {
+    console.error("查询统计数据失败：", {
+      pending: pending.error,
+      approved: approved.error,
+      rejected: rejected.error,
+      offline: offline.error,
+    });
+
+    throw new Error("部分统计数据获取失败");
+  }
+
+  // 3. 计算总统计
+  return {
+    pending: pending.count || 0,
+    online: approved.count || 0,
+    rejected: rejected.count || 0,
+    offline: offline.count || 0,
+    total:
+      (pending.count || 0) + (approved.count || 0) + (rejected.count || 0) + (offline.count || 0),
+  };
+}

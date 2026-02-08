@@ -7,6 +7,7 @@ import { useMessageStore } from "@/store/useMessageStore";
 import { HotelInformation } from "@/types/HotelInformation";
 import { Badge, Button, Card, Tabs } from "@arco-design/web-react";
 import { IconRefresh } from "@arco-design/web-react/icon";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 // TODO 可能优化：批量操作支持
 // TODO 可能优化：操作历史记录
@@ -41,6 +42,17 @@ export default function Home() {
 
   // tab 状态
   const [activeTab, setActiveTab] = useState("pending");
+
+  // 获取 URL 参数
+  const searchParams = useSearchParams();
+
+  // 读取 URL 中的 tab 参数
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "pending" || tab === "processed") {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   // 统计数据
   const stats = useMemo(() => {
