@@ -7,6 +7,7 @@ import {
   IconBranch,
   IconCheckCircle,
   IconDashboard,
+  IconFile,
   IconSettings,
 } from "@arco-design/web-react/icon";
 import { useRouter } from "next/navigation";
@@ -25,6 +26,9 @@ export default function Nav() {
       router.push("/admin/online");
     }
     if (key === "4") {
+      router.push("/admin/logs");
+    }
+    if (key === "5") {
       router.push("/admin/setting");
     }
   }
@@ -66,6 +70,10 @@ export default function Nav() {
           上线管理
         </Menu.Item>
         <Menu.Item key="4">
+          <IconFile />
+          操作日志
+        </Menu.Item>
+        <Menu.Item key="5">
           <IconSettings />
           设置选项
         </Menu.Item>

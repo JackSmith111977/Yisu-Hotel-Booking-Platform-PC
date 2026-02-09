@@ -81,10 +81,10 @@ export default function Home() {
 
     try {
       if (record.status === "approved") {
-        await offlineHotel(record.id);
+        await offlineHotel(record.id, record.nameZh);
         showMessage("success", `酒店${record.nameZh}已下线`);
       } else {
-        await approveHotel(record.id);
+        await approveHotel(record.id, record.nameZh, "online");
         showMessage("success", `酒店${record.nameZh}已上线`);
       }
     } catch (error: unknown) {

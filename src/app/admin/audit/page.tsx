@@ -126,7 +126,7 @@ export default function Home() {
 
     try {
       // 1. 调用 API
-      await approveHotel(curRecord.id);
+      await approveHotel(curRecord.id, curRecord.nameZh, "approve");
 
       // 2. 更新本地数据
       setData((prev) =>
@@ -168,7 +168,7 @@ export default function Home() {
 
     // 2. 调用 API
     try {
-      await rejectHotel(curRecord.id, reason);
+      await rejectHotel(curRecord.id, curRecord.nameZh, reason);
 
       // 3. 更新本地数据
       setData((prev) =>

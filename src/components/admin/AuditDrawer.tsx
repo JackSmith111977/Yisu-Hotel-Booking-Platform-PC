@@ -26,7 +26,8 @@ interface AuditDrawerProps {
   onApprove: () => void;
   onReject: () => void;
 }
-
+// TODO: 添加房型信息
+// TODO: 添加驳回理由信息
 export default function AuditDrawer({
   visible,
   data,
