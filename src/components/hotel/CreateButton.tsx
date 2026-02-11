@@ -1,5 +1,4 @@
 import { Button } from "@arco-design/web-react";
-import { Dispatch, SetStateAction } from 'react';
 
 interface CreateButtonProps {
     handleCreate: () => void;

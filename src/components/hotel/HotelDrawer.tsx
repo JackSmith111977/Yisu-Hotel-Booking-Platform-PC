@@ -11,6 +11,7 @@ import {
   Typography,
 } from "@arco-design/web-react";
 import dayjs from 'dayjs';
+import { memo } from "react";
 
 interface HotelDrawerProps {
   visible: boolean;
@@ -20,7 +21,9 @@ interface HotelDrawerProps {
   onReject?: () => void;
 }
 
-export default function HotelDrawer({ visible, data, onClose}: HotelDrawerProps) {
+
+
+const HotelDrawer = memo(function HotelDrawer({ visible, data, onClose}: HotelDrawerProps) {
   if (!data) return null;
 
   // 处理 images 字段（可能是字符串或 JSON 字符串）
@@ -122,4 +125,6 @@ export default function HotelDrawer({ visible, data, onClose}: HotelDrawerProps)
       </Space>
     </Drawer>
   );
-}
+})
+
+export default HotelDrawer;

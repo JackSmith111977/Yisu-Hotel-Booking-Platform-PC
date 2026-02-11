@@ -1,8 +1,5 @@
-'use client'
-import HotelManagement from "@/components/hotel/HotelManagement";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return (
-    <HotelManagement statusFilter={true} />
-  )
+  redirect("/hotel/dashboard");
 }

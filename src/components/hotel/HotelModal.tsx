@@ -28,6 +28,22 @@ interface HotelModalProps {
     onCreated?: () => void;
 }
 
+// 地址选择函数
+function transformData(data: AddressDataType) {
+    return Object.entries(data).map(([province, cities]) => ({
+      label: province,
+      value: province,
+      children: Object.entries(cities).map(([city, areas]) => ({
+        label: city,
+        value: city,
+        children: areas.map(area => ({
+          label: area,
+          value: area
+        }))
+      }))
+    }))
+}
+
 const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: HotelModalProps) => {
     const [confirmLoading, setConfirmLoading] = useState(false);
     const [confirmVisible, setConfirmVisible] = useState(false);    // 确认弹窗状态
@@ -123,22 +139,7 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
         },
     };
 
-    // 地址选择函数
-    function transformData(data: AddressDataType) {
-        return Object.entries(data).map(([province, cities]) => ({
-          label: province,
-          value: province,
-          children: Object.entries(cities).map(([city, areas]) => ({
-            label: city,
-            value: city,
-            children: areas.map(area => ({
-              label: area,
-              value: area
-            }))
-          }))
-        }))
-    }
-    const options = transformData(pcaData)
+    const OPTIONS = transformData(pcaData)
 
     // 取消处理函数
     function handleCancel() {
@@ -221,7 +222,7 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                             field='region' 
                             rules={[{ required: true, message: '请输入酒店地址' }]}
                         >
-                            <Cascader options={options} placeholder="请选择地区" />
+                            <Cascader options={OPTIONS} placeholder="请选择地区" />
                             {/* <Input.TextArea 
                                 placeholder='请输入酒店详细地址' 
                                 autoSize={{ minRows: 2, maxRows: 4 }}

@@ -1,3 +1,4 @@
+'use server';
 import { supabase } from "@/lib/supabase";
 import { MineHotelInformationType, HotelRoomTypes } from "@/types/HotelInformation";
 

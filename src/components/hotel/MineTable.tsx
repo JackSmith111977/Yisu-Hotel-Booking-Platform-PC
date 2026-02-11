@@ -1,6 +1,6 @@
 "use client";
 import { Table, Button, Badge, Modal, Message } from '@arco-design/web-react';
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { MineHotelInformationType } from '@/types/HotelInformation';
 import dayjs from 'dayjs'
 
@@ -14,7 +14,7 @@ interface MineTableProps {
     data: MineHotelInformationType[];
   }
 
-const MineTable = ({ onEdit, data, onDelete, statusFilter, onView }: MineTableProps) => {  
+const MineTable = memo(function MineTable({ onEdit, data, onDelete, statusFilter, onView }: MineTableProps) {  
   const [confirmVisible, setConfirmVisible] = useState(false);    // 确认弹窗状态
   const [Id, setId] = useState<number | null>(null);  // 存储需删除的 id
 
@@ -73,7 +73,7 @@ const MineTable = ({ onEdit, data, onDelete, statusFilter, onView }: MineTablePr
           draft: { status: "default", text: "草稿" },
           pending: { status: "processing", text: "待审核" },
           approved: { status: "success", text: "已发布" },
-          rejected: { status: "error", text: "已拒绝" },
+          // rejected: { status: "error", text: "已拒绝" },
           offline: { status: "error", text: "已下线" },
         };
         const config = statusMap[status] || statusMap.pending;
@@ -83,7 +83,7 @@ const MineTable = ({ onEdit, data, onDelete, statusFilter, onView }: MineTablePr
         [
           { text: "待审核", value: "pending" },
           { text: "已发布", value: "approved" },
-          { text: "已拒绝", value: "rejected" },
+          // { text: "已拒绝", value: "rejected" },
           { text: "已下线", value: "offline" },
         ] : undefined,
       onFilter: (value: string, record: MineHotelInformationType) => record.status === value,
@@ -146,7 +146,6 @@ const MineTable = ({ onEdit, data, onDelete, statusFilter, onView }: MineTablePr
         indentSize={55}
         columns={hotelColumns} 
         data={data} 
-        noDataElement={<div>loading...</div>}
         expandedRowRender={cur => (
           <Table rowKey="id" columns={roomColumns} data={cur.room_types} pagination={false} style={{ backgroundColor: '#fff' }}/>
         )} 
@@ -167,6 +166,6 @@ const MineTable = ({ onEdit, data, onDelete, statusFilter, onView }: MineTablePr
     </>
     
   );
-};
+});
 
 export default MineTable;

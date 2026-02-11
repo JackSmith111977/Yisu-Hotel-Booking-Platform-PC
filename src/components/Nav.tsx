@@ -20,8 +20,9 @@ const menuConfig = {
       { key: "4", label: "设置选项", path: "/admin/setting", icon: <IconSettings /> },
     ],
     hotel: [
-      { key: "1", label: "我的酒店", path: "/hotel", icon: <IconMenu />},
-      { key: "2", label:"草稿箱", path: "hotel/draft", icon: <IconEdit />}
+      { key: "1", label: "仪表盘", path: "/hotel/dashboard", icon: <IconDashboard /> },
+      { key: "2", label: "我的酒店", path: "/hotel/management", icon: <IconMenu />},
+      { key: "4", label: "待办事项", path: "/hotel/todo", icon: <IconSettings /> },
     ],
   };
 
