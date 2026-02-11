@@ -55,7 +55,7 @@ export interface AuditLogs {
  * @param rejected 已拒绝数量
  * @param total 总操作数量
  */
-interface TrendPoint {
+export interface TrendPoint {
   /**
    * 日期
    * @description 日期
