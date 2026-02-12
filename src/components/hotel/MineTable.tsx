@@ -83,7 +83,6 @@ const MineTable = memo(function MineTable({ onEdit, data, onDelete, statusFilter
         [
           { text: "待审核", value: "pending" },
           { text: "已发布", value: "approved" },
-          // { text: "已拒绝", value: "rejected" },
           { text: "已下线", value: "offline" },
         ] : undefined,
       onFilter: (value: string, record: MineHotelInformationType) => record.status === value,

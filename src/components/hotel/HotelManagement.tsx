@@ -45,7 +45,7 @@ export default function HotelManagement({ statusFilter }: Props) {
   const fetchData = useCallback(async () => {
     const fetchedAll = await getHotels() || [];
     // setAllData(fetchedAll);
-    let filtered = fetchedAll.filter(item => (statusFilter ? item.status !== 'draft' : item.status === 'draft'));
+    let filtered = fetchedAll.filter(item => (statusFilter ? item.status !== 'draft' && item.status !== 'rejected' : item.status === 'draft' && item.status === 'rejected'));
     if (keyword && keyword.trim() !== '') {
       const k = keyword.trim().toLowerCase();
       filtered = filtered.filter(item =>
