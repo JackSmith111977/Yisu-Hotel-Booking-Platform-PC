@@ -1,5 +1,6 @@
 import { HotelInformation, HotelRoomTypesForAdmin } from "@/types/HotelInformation";
 import {
+  Alert,
   Button,
   Collapse,
   Descriptions,
@@ -74,6 +75,15 @@ export default function AuditDrawer({
       width={480}
     >
       <Space direction="vertical">
+        {/* 新增：驳回理由展示 - 放在最顶部 */}
+        {data.rejectedReason && (
+          <Alert
+            type="warning"
+            title="上一次驳回原因"
+            content={data.rejectedReason}
+            style={{ marginBottom: 12 }}
+          />
+        )}
         {/* 新增：封面图展示 */}
         {hasCoverImage ? (
           <div style={{ width: "100%", height: 200, overflow: "hidden", borderRadius: 4 }}>
