@@ -1,10 +1,15 @@
 "use client";
-import { approveHotel, fetchHotelsList, rejectHotel } from "@/actions/admin_service";
+import {
+  approveHotel,
+  fetchHotelRoomTypes,
+  fetchHotelsList,
+  rejectHotel,
+} from "@/actions/admin_service";
 import AuditDrawer from "@/components/admin/AuditDrawer";
 import AuditTable from "@/components/admin/AuditTable";
 import RejectModal from "@/components/admin/RejectModal";
 import { useMessageStore } from "@/store/useMessageStore";
-import { HotelInformation } from "@/types/HotelInformation";
+import { HotelInformation, HotelRoomTypesForAdmin } from "@/types/HotelInformation";
 import { Badge, Button, Card, Tabs } from "@arco-design/web-react";
 import { IconRefresh } from "@arco-design/web-react/icon";
 import { useSearchParams } from "next/navigation";
@@ -42,6 +47,12 @@ export default function Home() {
 
   // tab 状态
   const [activeTab, setActiveTab] = useState("pending");
+
+  // 房型数据状态
+  const [roomTypes, setRoomTypes] = useState<HotelRoomTypesForAdmin[]>([]);
+
+  // 房型加载状态
+  const [roomTypesLoading, setRoomTypesLoading] = useState(false);
 
   // 获取 URL 参数
   const searchParams = useSearchParams();
@@ -99,9 +110,23 @@ export default function Home() {
    * 打开抽屉逻辑
    * @param record 点击按钮所在的记录行
    */
-  const handleOpenDrawer = (record: HotelInformation) => {
+  const handleOpenDrawer = async (record: HotelInformation) => {
     setCurRecord(record);
     setDrawerVisible(true);
+
+    // 重置并开始获取房型数据
+    setRoomTypes([]);
+    setRoomTypesLoading(true);
+
+    try {
+      const res = await fetchHotelRoomTypes(record.id);
+      setRoomTypes(res);
+    } catch (error: unknown) {
+      console.log("获取房型失败", error);
+      showMessage("error", error instanceof Error ? error.message : "数据加载失败");
+    } finally {
+      setRoomTypesLoading(false);
+    }
   };
 
   /**
@@ -238,6 +263,8 @@ export default function Home() {
       <AuditDrawer
         visible={drawerVisible}
         data={curRecord}
+        roomTypes={roomTypes}
+        loadingRoomTypes={roomTypesLoading}
         onClose={() => setDrawerVisible(false)}
         onApprove={handleApprove}
         onReject={handleReject}

@@ -1,6 +1,7 @@
-import { HotelInformation } from "@/types/HotelInformation";
+import { HotelInformation, HotelRoomTypesForAdmin } from "@/types/HotelInformation";
 import {
   Button,
+  Collapse,
   Descriptions,
   Divider,
   Drawer,
@@ -22,15 +23,19 @@ import { IconCheck, IconClose } from "@arco-design/web-react/icon";
 interface AuditDrawerProps {
   visible: boolean;
   data: HotelInformation | null;
+  roomTypes?: HotelRoomTypesForAdmin[];
+  loadingRoomTypes?: boolean;
   onClose: () => void;
   onApprove: () => void;
   onReject: () => void;
 }
-// TODO: 添加房型信息
+
 // TODO: 添加驳回理由信息
 export default function AuditDrawer({
   visible,
   data,
+  roomTypes = [],
+  loadingRoomTypes = false,
   onClose,
   onApprove,
   onReject,
@@ -116,6 +121,70 @@ export default function AuditDrawer({
             { label: "详细地址", value: data.address },
           ]}
         />
+
+        <Divider style={{ margin: "12px 0" }} />
+
+        {/* 房型信息 */}
+        <div>
+          <Typography.Title heading={6} style={{ marginTop: 0, marginBottom: 12 }}>
+            房型信息
+          </Typography.Title>
+
+          {loadingRoomTypes ? (
+            <Typography.Text type="secondary">加载中...</Typography.Text>
+          ) : roomTypes && roomTypes.length > 0 ? (
+            // 折叠
+            <Collapse defaultActiveKey={["room_list"]} style={{ borderRadius: 4 }}>
+              {/* 外层折叠 */}
+              <Collapse.Item header={`房型列表(${roomTypes.length})`} name="room_list">
+                {/* 内层折叠 */}
+                <Collapse accordion>
+                  {roomTypes.map((room) => (
+                    <Collapse.Item
+                      key={room.id}
+                      name={room.id}
+                      header={
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            width: "100%",
+                            paddingRight: 16,
+                          }}
+                        >
+                          <span>{room.name}</span>
+                          <span style={{ color: "var(--color-text-3)" }}>¥{room.price}</span>
+                        </div>
+                      }
+                    >
+                      <Descriptions
+                        column={1}
+                        labelStyle={{ width: 80 }}
+                        data={[
+                          { label: "价格", value: `¥${room.price}` },
+                          { label: "数量", value: room.quantity },
+                          { label: "面积", value: `${room.size} m²` },
+                          {
+                            label: "最大入住",
+                            value: room.max_guests ? `${room.max_guests} 人` : "-",
+                          },
+                          {
+                            label: "床型",
+                            value: room.beds?.map((b) => `${b.type}*${b.count}`).join(", ") || "-",
+                          },
+                          { label: "描述", value: room.description || "暂无描述" },
+                        ]}
+                      />
+                      {/* 如果有房型图片也可以在这里展示 */}
+                    </Collapse.Item>
+                  ))}
+                </Collapse>
+              </Collapse.Item>
+            </Collapse>
+          ) : (
+            <Typography.Text type="secondary">暂无房型信息</Typography.Text>
+          )}
+        </div>
 
         <Divider style={{ margin: "12px 0" }} />
 

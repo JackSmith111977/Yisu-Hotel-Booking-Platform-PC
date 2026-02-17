@@ -17,6 +17,7 @@ export default function ThemeInit() {
         // 激活 Tailwind 深色模式
         html.classList.add("dark");
       } else {
+        // 卸载深色模式
         body.removeAttribute("arco-theme");
         html.classList.remove("dark");
       }

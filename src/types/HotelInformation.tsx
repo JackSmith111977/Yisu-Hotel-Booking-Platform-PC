@@ -81,6 +81,11 @@ export interface HotelInformation {
    * @type {string[]}
    */
   images?: string[];
+  /**
+   * @description: 关联的房型列表
+   * @type {HotelRoomTypes[]}
+   */
+  roomTypes?: HotelRoomTypes[]; // 新增字段：房型列表
 }
 
 // 商户酒店数据
@@ -101,6 +106,49 @@ export interface MineHotelInformationType {
   updated_at: string; // 更新日期
   merchant_id?: string; // 商户id(暂定不需要)
   rejected_reason?: string;
+}
+// 1. 新增床型信息接口 (建议放在文件头部或 HotelRoomTypesForAdmin 附近)
+/**
+ * @description: 床型信息
+ * @interface BedInfo
+ * @property {string} type 床型名称，例如 "大床"
+ * @property {number} count 数量
+ * @property {string} size 尺寸描述 (可选)
+ */
+export interface BedInfo {
+  type: string; // 床型名称，例如 "大床"
+  count: number; // 数量
+  size?: string; // 尺寸描述 (可选)
+}
+/**
+ * @description: 酒店房型信息 (管理员端)
+ * @interface HotelRoomTypesForAdmin
+ * @property {string} id 房型id
+ * @property {string} name 房型名称
+ * @property {number} price 房型价格
+ * @property {number} quantity 房间数量
+ * @property {number} size 房间大小
+ * @property {string} description 房型描述
+ * @property {number} max_guests 最大 guests 数量 (可选)
+ * @property {BedInfo[]} beds 床型信息 (可选)
+ * @property {string[]} images 房型图片 (可选)
+ * @property {string[]} facilities 房型设施 (可选)
+ * @property {string} hotel_id 酒店id (外键)
+ */
+export interface HotelRoomTypesForAdmin {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  size: number;
+  description: string;
+
+  // 新增可选字段
+  max_guests?: number; // 对应 max_guests
+  beds?: BedInfo[]; // 对应 beds jsonb
+  images?: string[]; // 对应 images jsonb
+  facilities?: string[]; // 对应 facilities jsonb
+  hotel_id?: string; // 外键
 }
 
 export interface HotelRoomTypes {
