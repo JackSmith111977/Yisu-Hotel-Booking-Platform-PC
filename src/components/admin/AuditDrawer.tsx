@@ -31,7 +31,6 @@ interface AuditDrawerProps {
   onReject: () => void;
 }
 
-// TODO: 添加驳回理由信息
 export default function AuditDrawer({
   visible,
   data,
@@ -86,12 +85,12 @@ export default function AuditDrawer({
         )}
         {/* 新增：封面图展示 */}
         {hasCoverImage ? (
-          <div style={{ width: "100%", height: 200, overflow: "hidden", borderRadius: 4 }}>
+          <div style={{ width: "100%", height: 300, overflow: "hidden", borderRadius: 4 }}>
             <Image
               src={data.coverImage}
               alt="Cover"
-              width="100%"
-              height={200}
+              width={400}
+              height={300}
               style={{ objectFit: "cover" }}
             />
           </div>
@@ -211,7 +210,7 @@ export default function AuditDrawer({
                     key={idx}
                     src={img}
                     width={100}
-                    height={80}
+                    height={75}
                     style={{ objectFit: "cover", borderRadius: 4 }}
                     alt={`image-${idx}`}
                   />
