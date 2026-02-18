@@ -94,7 +94,8 @@ export interface MineHotelInformationType {
   opening_date: string; // 酒店开业时间
   contact_phone: string; // 联系电话
   room_types?: HotelRoomTypes[]; // 房间类型
-  images?: string; // 展示图片
+  image?: string; // 展示图片
+  album?: string[]; // 酒店相册
   surroundings?: HotelSurroundingType; // 周边信息
   promotions?: PromotionType[]; // 优惠信息
   status: HotelStatus; // 状态
@@ -110,6 +111,7 @@ export interface HotelRoomTypes {
   quantity: number; // 房间数量
   size: number; // 房间大小
   description: string; // 房间描述
+  images?: string[];
 }
 
 // export interface HotelImageType {
