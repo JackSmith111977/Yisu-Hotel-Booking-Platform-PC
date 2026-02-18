@@ -35,7 +35,7 @@ export default function StatCard({ title, value, icon, color, loading, onClick }
       onClick={onClick}
       // 3. 动态背景色与过渡动画
       style={{
-        backgroundColor: isHovered ? color : "white",
+        backgroundColor: isHovered ? color : "var(--color-bg-2)",
         transition: "all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)",
         borderRadius: "8px",
       }}

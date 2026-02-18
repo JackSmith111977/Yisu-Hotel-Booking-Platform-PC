@@ -387,3 +387,37 @@ export const fetchTrendData = async () => {
   // 翻转数组【七天前，六天前，...，今天】
   return Array.from(trendMap.values()).reverse();
 };
+
+/**
+ * 获取酒店房型信息
+ * @param hotelId 酒店id
+ * @returns 酒店房型信息列表
+ */
+export async function fetchHotelRoomTypes(hotelId: string) {
+  if (!hotelId) return [];
+
+  const { data, error } = await supabase_admin
+    .from("room_types")
+    .select("*")
+    .eq("hotel_id", parseInt(hotelId));
+
+  if (error) {
+    console.error(`获取酒店[${hotelId}]房型失败`, error);
+    return [];
+  }
+
+  // 映射数据
+  return (data || []).map((item) => ({
+    id: item.id.toString(),
+    name: item.name,
+    price: item.price,
+    quantity: item.quantity,
+    size: item.size,
+    description: item.description,
+    max_guests: item.max_guests,
+    beds: item.beds, // supabase 自动解析 jsonb
+    images: item.images, // supabase 自动解析 jsonb
+    facilities: item.facilities, // supabase 自动解析 jsonb
+    hotel_id: item.hotel_id.toString(),
+  }));
+}

@@ -29,7 +29,7 @@ export default function Nav() {
       router.push("/admin/logs");
     }
     if (key === "5") {
-      router.push("/admin/setting");
+      router.push("/admin/settings");
     }
   }
 

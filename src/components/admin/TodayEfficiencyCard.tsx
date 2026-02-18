@@ -26,7 +26,7 @@ export default function TodayEfficiencyCard({
         borderRadius: "12px",
         display: "flex",
         flexDirection: "column",
-        backgroundColor: isHovered ? "#f9f9f9" : "#ffffff",
+        backgroundColor: isHovered ? "var(--color-fill-2)" : "var(--color-bg-2)",
         boxShadow: isHovered ? "0 12px 28px rgba(0, 0, 0, 0.15)" : "0 2px 8px rgba(0, 0, 0, 0.05)",
       }}
       onMouseEnter={() => setIsHovered(true)}
