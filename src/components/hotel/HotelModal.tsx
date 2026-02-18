@@ -10,13 +10,15 @@ import {
     Card,
     Grid,
     Rate,
-    Cascader,
-    Message
+    Cascader
 } from '@arco-design/web-react';
 import { IconPlus, IconDelete } from '@arco-design/web-react/icon';
 import pcaData from 'china-division/dist/pca.json'
 import { MineHotelInformationType, HotelRoomTypes, AddressDataType } from '@/types/HotelInformation';
+import ImageUploader, { UploadedImage } from './ImageUploader';
+import { uploadHotelImages, deleteStorageFolder } from '@/actions/hotels';
 import { Dispatch, SetStateAction, useEffect } from 'react';
+import { toast } from 'sonner';
 
 const FormItem = Form.Item;
 const { Row, Col } = Grid;
@@ -51,12 +53,9 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
 
     const onOkay = async (okStatus: 'draft' | 'submit') => {
         try {
-            // const values = await form.validate();
-            // 草稿时跳过校验
             const values = okStatus === 'draft' ? form.getFieldsValue() : await form.validate();
             setConfirmLoading(true);
     
-            // 整理酒店数据。编辑时保留原有 status，创建时设置为 pending。
             const hotelData: Partial<MineHotelInformationType> = {
                 name_zh: values.nameZh,
                 name_en: values.nameEn,
@@ -65,61 +64,117 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                 star_rating: values.starRating,
                 opening_date: values.openingDate,
                 contact_phone: values.contactPhone,
-                // ...(initialData ? { } : { status: okStatus === 'draft' ? 'draft' as const : 'pending' as const }),
                 status: okStatus === 'draft' ? 'draft' : 'pending',
+                // 图片字段先不在此处填入，创建/编辑分支各自处理后再传入
             };
-            console.log('提交酒店数据:', hotelData);
-
+    
             if (initialData) {
-                // 编辑模式：更新酒店 + 替换房型
+                // ── 编辑模式 ─────────────────────────────────────────────────────
+    
+                // 新增：上传酒店图片（先清理旧文件，再上传新图）
+                const editImgInputs: UploadedImage[] = values.hotelImages ?? [];
+                const editImgDataUrls = editImgInputs.map(img => img.remoteUrl ?? img.dataUrl);
+                await deleteStorageFolder(`hotel_${initialData.id}`);
+                const uploadedHotelUrls = await uploadHotelImages(
+                    editImgDataUrls,
+                    `hotel_${initialData.id}`,
+                );
+    
                 const hotel = await updateHotel(initialData.id as number, {
                     ...hotelData,
+                    image: uploadedHotelUrls[0] ?? null,    // 新增：首图
+                    album: uploadedHotelUrls.slice(1),      // 新增：相册
                 });
-
+    
                 if (hotel) {
                     if (values.roomTypes?.length > 0) {
-                        const roomTypesData = values.roomTypes.map((room: HotelRoomTypes) => ({
-                            name: room.name || '',
-                            price: room.price,
-                            quantity: room.quantity,
-                            size: room.size,
-                            description: room.description || '',
-                        }));
+                        // 新增：map 改为 async + Promise.all，支持房型图片上传
+                        const roomTypesData = await Promise.all(
+                            values.roomTypes.map(async (room: HotelRoomTypes & { images?: UploadedImage[] }, index: number) => {
+                                // 新增：上传房型图片
+                                const roomImgDataUrls = (room.images ?? []).map(img => {
+                                    const i = img as unknown as UploadedImage;
+                                    console.log('img item:', i, 'remoteUrl:', i.remoteUrl, 'dataUrl:', i.dataUrl);
+                                    return i.remoteUrl ?? i.dataUrl;
+                                });
+                                const uploadedRoomUrls = await uploadHotelImages(
+                                    roomImgDataUrls,
+                                    `hotel_${initialData.id}/room_${index}`,
+                                );
+                                return {
+                                    name: room.name || '',
+                                    price: room.price,
+                                    quantity: room.quantity,
+                                    size: room.size,
+                                    description: room.description || '',
+                                    images: uploadedRoomUrls,   // 新增：房型图片 URL 数组
+                                };
+                            })
+                        );
                         console.log('替换房型数据:', roomTypesData);
                         await replaceRoomTypes(initialData.id as number, roomTypesData);
                     } else {
-                        // 没有房型则清空
                         await replaceRoomTypes(initialData.id as number, []);
                     }
-
-                    Message.success('更新成功');
+    
+                    toast.success('更新成功');
                     setModalVisible(false);
-                    if (onCreated) onCreated(); // 通知父组件刷新
+                    if (onCreated) onCreated();
                     form.resetFields();
                 } else {
-                    Message.error('更新失败');
+                    toast.error('更新失败');
                 }
+    
             } else {
-                // 创建模式
+                // ── 创建模式 ─────────────────────────────────────────────────────
+    
+                // 先 insert 酒店骨架（不含图片），拿到 id 后再上传
                 const hotel = await createHotels(hotelData as MineHotelInformationType);
+    
                 if (hotel) {
-                    // 关联酒店 ID 并创建房型
+                    // 新增：拿到 hotel.id 后上传酒店图片，再 update 图片字段
+                    const hotelImgInputs: UploadedImage[] = values.hotelImages ?? [];
+                    const hotelImgDataUrls = hotelImgInputs.map(img => img.remoteUrl ?? img.dataUrl);
+                    const uploadedHotelUrls = await uploadHotelImages(
+                        hotelImgDataUrls,
+                        `hotel_${hotel.id}`,
+                    );
+                    await updateHotel(hotel.id, {
+                        image: uploadedHotelUrls[0] ?? null,    // 新增：首图
+                        album: uploadedHotelUrls.slice(1),      // 新增：相册
+                    });
+    
                     if (values.roomTypes?.length > 0) {
-                        const roomTypesData = values.roomTypes.map((room: HotelRoomTypes) => ({
-                            hotel_id: hotel.id,
-                            name: room.name || '',
-                            price: room.price,
-                            quantity: room.quantity,
-                            size: room.size,
-                            description: room.description || '',
-                        }));
-                        
+                        // 新增：同编辑模式，改为 async + Promise.all
+                        const roomTypesData = await Promise.all(
+                            values.roomTypes.map(async (room: HotelRoomTypes & { images?: UploadedImage[] }, index: number) => {
+                                // 新增：上传房型图片
+                                const roomImgDataUrls = (room.images ?? []).map(img => {
+                                    const i = img as unknown as UploadedImage;
+                                    console.log('img item:', i, 'remoteUrl:', i.remoteUrl, 'dataUrl:', i.dataUrl);
+                                    return i.remoteUrl ?? i.dataUrl;
+                                });
+                                const uploadedRoomUrls = await uploadHotelImages(
+                                    roomImgDataUrls,
+                                    `hotel_${hotel.id}/room_${index}`,
+                                );
+                                return {
+                                    hotel_id: hotel.id,
+                                    name: room.name || '',
+                                    price: room.price,
+                                    quantity: room.quantity,
+                                    size: room.size,
+                                    description: room.description || '',
+                                    images: uploadedRoomUrls,   // 新增：房型图片 URL 数组
+                                };
+                            })
+                        );
                         console.log('提交房型数据:', roomTypesData);
                         await createRoomTypes(roomTypesData);
                     }
-                    
+    
                     setModalVisible(false);
-                    if (onCreated) onCreated();   // 通知父组件已创建成功以触发刷新
+                    if (onCreated) onCreated();
                     form.resetFields();
                 }
             }
@@ -168,7 +223,15 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
             starRating: initialData.star_rating,
             openingDate: initialData.opening_date,
             contactPhone: initialData.contact_phone,
-            roomTypes: initialData.room_types,
+            hotelImages: [
+                ...(initialData.image ? [{ dataUrl: initialData.image, remoteUrl: initialData.image }] : []),
+                ...(initialData.album ?? []).map(url => ({ dataUrl: url, remoteUrl: url })),
+            ],
+            roomTypes: (initialData.room_types ?? []).map(rt => ({
+                ...rt,
+                // 新增：将 string[] 转成 UploadedImage[] 供 ImageUploader 展示
+                images: (rt.images ?? []).map((url: string) => ({ dataUrl: url, remoteUrl: url })),
+            })),
           });
         } else if (modalVisible) {
           // 新建模式清空表单
@@ -261,7 +324,18 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                             ]}
                         >
                             <Input placeholder='请输入联系电话' />
-                        </FormItem>                        
+                        </FormItem>   
+
+                        <FormItem
+                            label="酒店图片"
+                            field="hotelImages"
+                            rules={[{
+                                validator: (value, callback) =>
+                                    (value?.length ?? 0) === 0 ? callback('请至少上传一张酒店图片') : callback()
+                            }]}
+                        >
+                            <ImageUploader max={9} label="酒店图片" />
+                        </FormItem>                     
                     </Card>
     
                     {/* 房型信息 - 动态表单 */}
@@ -361,6 +435,18 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                                                     placeholder='请输入房型描述，如：含早餐、免费WiFi等'
                                                     autoSize={{ minRows: 2, maxRows: 4 }}
                                                 />
+                                            </FormItem>
+                                            <FormItem
+                                                label="房型图片"
+                                                field={`${field.field}.images`}
+                                                labelCol={{ span: 4 }}
+                                                wrapperCol={{ span: 20 }}
+                                                rules={[{
+                                                    validator: (value, callback) =>
+                                                        (value?.length ?? 0) === 0 ? callback('请至少上传一张房型图片') : callback()
+                                                }]}
+                                            >
+                                                <ImageUploader max={6} label="房型图片" />
                                             </FormItem>
                                         </Card>
                                     ))}

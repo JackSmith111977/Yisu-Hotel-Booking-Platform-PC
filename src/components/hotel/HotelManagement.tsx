@@ -4,7 +4,7 @@ import HotelModal from "@/components/hotel/HotelModal";
 import CreateButton from "@/components/hotel/CreateButton";
 import HotelDrawer from "@/components/hotel/HotelDrawer";
 import { MineHotelInformationType } from "@/types/HotelInformation";
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Input, Message } from "@arco-design/web-react";
 import { getHotels, deleteHotel } from "@/actions/hotels";
 
