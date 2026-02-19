@@ -1,10 +1,12 @@
 'use server';
 import { supabase_admin } from "@/lib/supabase_admin";
 import { MineHotelInformationType, HotelRoomTypes } from "@/types/HotelInformation";
+import { createMerchantClient } from "@/lib/supabase_merchant";
 
 // 删除数据
 export async function deleteHotel(id: number) {
-    const { error } = await supabase_admin
+    const supabase = await createMerchantClient();
+    const { error } = await supabase
         .from('hotels')
         .delete()
         .eq('id', id);
@@ -18,9 +20,11 @@ export async function deleteHotel(id: number) {
 
 // 插入新数据
 export async function createHotels(data: Partial<MineHotelInformationType>) {
-    const { data: hotel, error } = await supabase_admin
+    const supabase = await createMerchantClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data: hotel, error } = await supabase
         .from('hotels')
-        .insert(data)
+        .insert({ ...data, merchant_id: user?.id })
         .select()
         .single();  // 返回单条数据
     
@@ -32,6 +36,7 @@ export async function createHotels(data: Partial<MineHotelInformationType>) {
     console.log('创建成功');
     return hotel;  // 返回酒店数据，包含 id
 }
+
 export async function createRoomTypes(data: Partial<HotelRoomTypes>[]) {
     const { error } = await supabase_admin
         .from('room_types')
@@ -47,7 +52,8 @@ export async function createRoomTypes(data: Partial<HotelRoomTypes>[]) {
 
 // 表格初始渲染
 export async function getHotels() {
-    const { data, error } = await supabase_admin
+    const supabase = await createMerchantClient();
+    const { data, error } = await supabase
         .from('hotels')
         .select('*, room_types(*)')
         .order('updated_at', { ascending: false });
@@ -62,7 +68,8 @@ export async function getHotels() {
 
 // 更新酒店
 export async function updateHotel(id: number, data: Partial<MineHotelInformationType>) {
-    const { data: hotel, error } = await supabase_admin
+    const supabase = await createMerchantClient();
+    const { data: hotel, error } = await supabase
         .from('hotels')
         .update(data)
         .eq('id', id)

@@ -35,7 +35,7 @@ export async function middleware(request: NextRequest) {
   if (currentPath.startsWith('/admin') && checkResult.user?.role !== 'admin') {
     return NextResponse.json({ success: false, message: '你不是管理员，没权限' }, { status: 403 });
   }
-  if (currentPath.startsWith('/merchant') && checkResult.user?.role !== 'merchant') {
+  if (currentPath.startsWith('/hotel') && checkResult.user?.role !== 'merchant') {
     return NextResponse.json({ success: false, message: '你不是商家，没权限' }, { status: 403 });
   }
 
