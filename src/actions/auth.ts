@@ -233,7 +233,7 @@ export async function completeRegister(formData: {
 }
 
 // ====================== 登录 ======================
-/** 登录验证 + JWT Token签发*/
+/** 登录验证，JWT Token签发*/
 export async function loginWithJWT(formData: {
   account: string; // 邮箱/用户名
   password: string;
@@ -243,51 +243,83 @@ export async function loginWithJWT(formData: {
   try {
     // 区分账户类型（邮箱/用户名）
     let email = '';
+    let userRole = ''; 
+    
     if (validateEmail(account)) {
-      email = account;
-    } else {
+      // 邮箱登录
+      console.log('使用邮箱登录，邮箱地址：', account);
       const { data: users, error: userError } = await supabase_admin
         .from('users')
-        .select('email, user_metadata')
-        .eq('user_metadata->>username', account);
+        .select('email, role')
+        .eq('email', account);
 
-      if (userError || !users || users.length === 0) {
+      if (userError) {
+        console.error('查询用户失败（邮箱）：', userError.message);
+        return { success: false, message: `查询用户失败：${userError.message}` };
+      }
+
+      if (!users || users.length === 0) {
         return { success: false, message: '账户不存在' };
       }
 
       const userData = users[0];
-      // TS类型安全：明确user_metadata的类型
-      const userRole = (userData.user_metadata as { role?: string })?.role;
-      if (!userRole || !['merchant', 'admin'].includes(userRole)) {
+      if (!['merchant', 'admin'].includes(userData.role)) {
         return { success: false, message: '账户角色非法，无法登录' };
       }
       email = userData.email;
+      userRole = userData.role;
+    } else {
+      // 用户名登录
+      console.log('使用用户名登录，用户名：', account);
+      const { data: users, error: userError } = await supabase_admin
+        .from('users')
+        .select('email, role') 
+        .eq('username', account); 
+
+      if (userError) {
+        console.error('查询用户失败（用户名）：', userError.message, userError.code);
+        return { success: false, message: `查询用户失败：${userError.message}` };
+      }
+
+      if (!users || users.length === 0) {
+        console.warn('未找到该用户名对应的用户：', account);
+        return { success: false, message: '账户不存在' };
+      }
+
+      const userData = users[0];
+      // 角色校验
+      if (!['merchant', 'admin'].includes(userData.role)) {
+        return { success: false, message: '账户角色非法，无法登录' };
+      }
+      email = userData.email;
+      userRole = userData.role;
     }
 
-    // 密码验证 ,获取JWT Token
+    // 密码验证 + 获取JWT Token
     const { data, error } = await supabase_admin.auth.signInWithPassword({
       email,
       password,
     });
 
     if (error) {
-      console.error('登录失败：', error);
+      console.error('登录失败（密码验证）：', error);
       if (error.message.includes('Invalid login credentials')) {
         return { success: false, message: '密码错误' };
       }
       return { success: false, message: `登录失败：${error.message}` };
     }
 
-    // TS类型安全：非空校验 + 类型断言
+    // 非空校验
     if (!data.user || !data.session) {
       return { success: false, message: '登录异常，未获取到用户信息' };
     }
 
-    // 获取用户信息和角色
-    const userRole = (data.user.user_metadata as { role?: 'merchant' | 'admin' })?.role;
-    if (!userRole) {
-      return { success: false, message: '用户角色未配置，无法登录' };
-    }
+    // 返回登录结果
+    const { data: userInfo } = await supabase_admin
+      .from('users')
+      .select('username')
+      .eq('email', email)
+      .single();
 
     return {
       success: true,
@@ -295,9 +327,9 @@ export async function loginWithJWT(formData: {
       token: data.session.access_token,
       user: {
         id: data.user.id,
-        username: (data.user.user_metadata as { username?: string })?.username || '',
+        username: userInfo?.username || '', 
         email: data.user.email || '',
-        role: userRole,
+        role: userRole, 
       },
     };
   } catch (err) {
