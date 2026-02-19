@@ -251,7 +251,7 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                     <>
                       <Button onClick={() => handleCancel()}>取消</Button>
                       <Button onClick={() => onOkay('draft')}>保存草稿</Button>
-                      <Button type="primary" status="success" onClick={() => onOkay('submit')}>确定</Button>
+                      <Button type="primary" status="success" onClick={() => onOkay('submit')}>提交</Button>
                     </>
                   }
             >
