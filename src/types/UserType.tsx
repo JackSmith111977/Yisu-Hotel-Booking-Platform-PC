@@ -1,4 +1,4 @@
-export type UserRole = "admin" | "hotel";
+export type UserRole = "admin" | "merchant";
 
 /**
  * 用户类型

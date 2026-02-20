@@ -1,9 +1,10 @@
-'use server';
-import { supabase_admin } from '@/lib/supabase_admin';
-import { revalidatePath } from 'next/cache';
-import { validateEmail, validatePassword, generateVerifyCode, validateRole } from '@/lib/validate';
+"use server";
+import { supabase_admin } from "@/lib/supabase_admin";
+import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { validateEmail, validatePassword, generateVerifyCode, validateRole } from "@/lib/validate";
 
-import { sendRegisterVerifyEmail } from '@/lib/email';
+import { sendRegisterVerifyEmail } from "@/lib/email";
 
 // 通用返回类型
 type BaseResponse = {
@@ -12,78 +13,80 @@ type BaseResponse = {
 };
 
 // ====================== 注册 ======================
-export async function checkUsernameUnique(username: string): Promise<{ isUnique: boolean; message: string }> {
+export async function checkUsernameUnique(
+  username: string
+): Promise<{ isUnique: boolean; message: string }> {
   if (!username) {
-    return { isUnique: false, message: '用户名不能为空' };
+    return { isUnique: false, message: "用户名不能为空" };
   }
 
   try {
     const { data: users, error } = await supabase_admin
-      .from('users')
-      .select('username') // 查询username列
-      .eq('username', username);
+      .from("users")
+      .select("username") // 查询username列
+      .eq("username", username);
 
     if (error) {
-      console.error('用户名校验失败：', error);
-      return { isUnique: false, message: '验证失败，请重试' };
+      console.error("用户名校验失败：", error);
+      return { isUnique: false, message: "验证失败，请重试" };
     }
 
     if (users.length > 0) {
-      return { isUnique: false, message: '用户名已被占用' };
+      return { isUnique: false, message: "用户名已被占用" };
     }
-    return { isUnique: true, message: '用户名可用' };
+    return { isUnique: true, message: "用户名可用" };
   } catch (err) {
-    console.error('用户名校验异常：', err);
-    return { isUnique: false, message: '验证失败，请重试' };
+    console.error("用户名校验异常：", err);
+    return { isUnique: false, message: "验证失败，请重试" };
   }
 }
 
 /** 注册验证码发送 */
 export async function sendRegisterCode(email: string, username: string): Promise<BaseResponse> {
   if (!validateEmail(email)) {
-    return { success: false, message: '邮箱格式错误' };
+    return { success: false, message: "邮箱格式错误" };
   }
   if (!username) {
-    return { success: false, message: '用户名不能为空' };
+    return { success: false, message: "用户名不能为空" };
   }
 
   // 生成最新验证码
   const code = generateVerifyCode();
   const expiresAtLocal = new Date(Date.now() + 5 * 60 * 1000);
-  const expiresAt = new Date(expiresAtLocal.getTime() - expiresAtLocal.getTimezoneOffset() * 60 * 1000);
+  const expiresAt = new Date(
+    expiresAtLocal.getTime() - expiresAtLocal.getTimezoneOffset() * 60 * 1000
+  );
 
   try {
     //删除该邮箱所有未使用的注册验证码
     const { error: deleteError } = await supabase_admin
-      .from('verify_codes')
+      .from("verify_codes")
       .delete()
-      .eq('email', email)
-      .eq('type', 'register')
-      .eq('used', false);
+      .eq("email", email)
+      .eq("type", "register")
+      .eq("used", false);
 
     if (deleteError) {
-      console.error('删除旧验证码失败：', deleteError);
+      console.error("删除旧验证码失败：", deleteError);
     }
 
     // 2. 存储最新验证码
-    const { error: saveError } = await supabase_admin
-      .from('verify_codes')
-      .insert([
-        {
-          email,
-          code,
-          type: 'register',
-          expires_at: expiresAt,
-          used: false,
-        },
-      ]);
+    const { error: saveError } = await supabase_admin.from("verify_codes").insert([
+      {
+        email,
+        code,
+        type: "register",
+        expires_at: expiresAt,
+        used: false,
+      },
+    ]);
 
     if (saveError) {
-      console.error('验证码存储失败：', saveError);
-      return { success: false, message: '验证码存储失败，请重试' };
+      console.error("验证码存储失败：", saveError);
+      return { success: false, message: "验证码存储失败，请重试" };
     }
 
-    console.log(' 最新验证码存储成功：', { email, code });
+    console.log(" 最新验证码存储成功：", { email, code });
 
     // QQ邮箱发送最新验证码
     const emailResult = await sendRegisterVerifyEmail(email, username, code);
@@ -91,17 +94,17 @@ export async function sendRegisterCode(email: string, username: string): Promise
       return { success: false, message: `验证码发送失败：${emailResult.error}` };
     }
 
-    return { success: true, message: '验证码已发送至你的邮箱，有效期5分钟' };
+    return { success: true, message: "验证码已发送至你的邮箱，有效期5分钟" };
   } catch (err) {
-    console.error('发送验证码异常：', err);
-    return { success: false, message: '发送验证码失败，请重试' };
+    console.error("发送验证码异常：", err);
+    return { success: false, message: "发送验证码失败，请重试" };
   }
 }
 
 /** 注册验证码验证 */
 export async function verifyRegisterCode(email: string, code: string): Promise<BaseResponse> {
   if (!code || code.length !== 6) {
-    return { success: false, message: '验证码格式错误（需6位数字）' };
+    return { success: false, message: "验证码格式错误（需6位数字）" };
   }
 
   try {
@@ -109,35 +112,32 @@ export async function verifyRegisterCode(email: string, code: string): Promise<B
     const nowUTC = new Date(nowLocal.getTime() - nowLocal.getTimezoneOffset() * 60 * 1000);
 
     const { data, error } = await supabase_admin
-      .from('verify_codes')
-      .select('*')
-      .eq('email', email)
-      .eq('type', 'register')
-      .eq('code', code)
-      .eq('used', false)
-      .gt('expires_at', nowUTC.toISOString())
-      .order('created_at', { ascending: false })
+      .from("verify_codes")
+      .select("*")
+      .eq("email", email)
+      .eq("type", "register")
+      .eq("code", code)
+      .eq("used", false)
+      .gt("expires_at", nowUTC.toISOString())
+      .order("created_at", { ascending: false })
       .limit(1);
 
     if (error) {
-      console.error('查询验证码失败：', error);
-      return { success: false, message: '验证码验证失败，请重试' };
+      console.error("查询验证码失败：", error);
+      return { success: false, message: "验证码验证失败，请重试" };
     }
 
     if (!data || data.length === 0) {
-      return { success: false, message: '验证码无效或已过期' };
+      return { success: false, message: "验证码无效或已过期" };
     }
 
     // 标记验证码为已使用
-    await supabase_admin
-      .from('verify_codes')
-      .update({ used: true })
-      .eq('id', data[0].id);
+    await supabase_admin.from("verify_codes").update({ used: true }).eq("id", data[0].id);
 
-    return { success: true, message: '验证码验证通过' };
+    return { success: true, message: "验证码验证通过" };
   } catch (err) {
-    console.error('验证验证码异常：', err);
-    return { success: false, message: '验证码验证失败，请重试' };
+    console.error("验证验证码异常：", err);
+    return { success: false, message: "验证码验证失败，请重试" };
   }
 }
 
@@ -148,7 +148,7 @@ export async function completeRegister(formData: {
   password: string;
   confirmPassword: string;
   code: string;
-  role: 'merchant' | 'admin';
+  role: "merchant" | "admin";
 }): Promise<BaseResponse> {
   const { username, email, password, confirmPassword, code, role } = formData;
 
@@ -160,7 +160,7 @@ export async function completeRegister(formData: {
     }
 
     if (password !== confirmPassword) {
-      return { success: false, message: '两次密码不一致' };
+      return { success: false, message: "两次密码不一致" };
     }
 
     const passwordCheck = validatePassword(password);
@@ -169,7 +169,7 @@ export async function completeRegister(formData: {
     }
 
     if (!validateEmail(email)) {
-      return { success: false, message: '邮箱格式错误' };
+      return { success: false, message: "邮箱格式错误" };
     }
 
     const codeCheck = await verifyRegisterCode(email, code);
@@ -196,39 +196,37 @@ export async function completeRegister(formData: {
     });
 
     if (error) {
-      console.error('注册失败：', error);
+      console.error("注册失败：", error);
       return { success: false, message: `注册失败：${error.message}` };
     }
 
     if (!data?.user) {
-      return { success: false, message: '注册异常，未获取到用户信息' };
+      return { success: false, message: "注册异常，未获取到用户信息" };
     }
 
     // 写入public.users表（字段完全匹配表结构）
-    const { error: insertError } = await supabase_admin
-      .from('users')
-      .insert([
-        {
-          id: data.user.id,        // 匹配表id列
-          username: username,      // 匹配表username列
-          email: email,            // 匹配表email列
-          role: role,              // 匹配表role列
-          created_at: new Date(),  // 匹配表created_at列
-        },
-      ]);
+    const { error: insertError } = await supabase_admin.from("users").insert([
+      {
+        id: data.user.id, // 匹配表id列
+        username: username, // 匹配表username列
+        email: email, // 匹配表email列
+        role: role, // 匹配表role列
+        created_at: new Date(), // 匹配表created_at列
+      },
+    ]);
 
     if (insertError) {
-      console.error('写入public.users失败：', insertError);
+      console.error("写入public.users失败：", insertError);
       // 回滚用户创建
       await supabase_admin.auth.admin.deleteUser(data.user.id);
       return { success: false, message: `用户信息存储失败：${insertError.message}` };
     }
 
-    revalidatePath('/register');
-    return { success: true, message: '注册成功！请前往邮箱验证后登录' };
+    revalidatePath("/register");
+    return { success: true, message: "注册成功！请前往邮箱验证后登录" };
   } catch (err) {
-    console.error('注册异常：', err);
-    return { success: false, message: '注册失败，请重试' };
+    console.error("注册异常：", err);
+    return { success: false, message: "注册失败，请重试" };
   }
 }
 
@@ -242,54 +240,54 @@ export async function loginWithJWT(formData: {
 
   try {
     // 区分账户类型（邮箱/用户名）
-    let email = '';
-    let userRole = ''; 
-    
+    let email = "";
+    let userRole = "";
+
     if (validateEmail(account)) {
       // 邮箱登录
-      console.log('使用邮箱登录，邮箱地址：', account);
+      console.log("使用邮箱登录，邮箱地址：", account);
       const { data: users, error: userError } = await supabase_admin
-        .from('users')
-        .select('email, role')
-        .eq('email', account);
+        .from("users")
+        .select("email, role")
+        .eq("email", account);
 
       if (userError) {
-        console.error('查询用户失败（邮箱）：', userError.message);
+        console.error("查询用户失败（邮箱）：", userError.message);
         return { success: false, message: `查询用户失败：${userError.message}` };
       }
 
       if (!users || users.length === 0) {
-        return { success: false, message: '账户不存在' };
+        return { success: false, message: "账户不存在" };
       }
 
       const userData = users[0];
-      if (!['merchant', 'admin'].includes(userData.role)) {
-        return { success: false, message: '账户角色非法，无法登录' };
+      if (!["merchant", "admin"].includes(userData.role)) {
+        return { success: false, message: "账户角色非法，无法登录" };
       }
       email = userData.email;
       userRole = userData.role;
     } else {
       // 用户名登录
-      console.log('使用用户名登录，用户名：', account);
+      console.log("使用用户名登录，用户名：", account);
       const { data: users, error: userError } = await supabase_admin
-        .from('users')
-        .select('email, role') 
-        .eq('username', account); 
+        .from("users")
+        .select("email, role")
+        .eq("username", account);
 
       if (userError) {
-        console.error('查询用户失败（用户名）：', userError.message, userError.code);
+        console.error("查询用户失败（用户名）：", userError.message, userError.code);
         return { success: false, message: `查询用户失败：${userError.message}` };
       }
 
       if (!users || users.length === 0) {
-        console.warn('未找到该用户名对应的用户：', account);
-        return { success: false, message: '账户不存在' };
+        console.warn("未找到该用户名对应的用户：", account);
+        return { success: false, message: "账户不存在" };
       }
 
       const userData = users[0];
       // 角色校验
-      if (!['merchant', 'admin'].includes(userData.role)) {
-        return { success: false, message: '账户角色非法，无法登录' };
+      if (!["merchant", "admin"].includes(userData.role)) {
+        return { success: false, message: "账户角色非法，无法登录" };
       }
       email = userData.email;
       userRole = userData.role;
@@ -302,38 +300,50 @@ export async function loginWithJWT(formData: {
     });
 
     if (error) {
-      console.error('登录失败（密码验证）：', error);
-      if (error.message.includes('Invalid login credentials')) {
-        return { success: false, message: '密码错误' };
+      console.error("登录失败（密码验证）：", error);
+      if (error.message.includes("Invalid login credentials")) {
+        return { success: false, message: "密码错误" };
       }
       return { success: false, message: `登录失败：${error.message}` };
     }
 
     // 非空校验
     if (!data.user || !data.session) {
-      return { success: false, message: '登录异常，未获取到用户信息' };
+      return { success: false, message: "登录异常，未获取到用户信息" };
     }
 
     // 返回登录结果
     const { data: userInfo } = await supabase_admin
-      .from('users')
-      .select('username')
-      .eq('email', email)
+      .from("users")
+      .select("username")
+      .eq("email", email)
       .single();
 
     return {
       success: true,
-      message: '登录成功',
+      message: "登录成功",
       token: data.session.access_token,
       user: {
         id: data.user.id,
-        username: userInfo?.username || '', 
-        email: data.user.email || '',
-        role: userRole, 
+        username: userInfo?.username || "",
+        email: data.user.email || "",
+        role: userRole,
       },
     };
   } catch (err) {
-    console.error('登录异常：', err);
-    return { success: false, message: '登录失败，请重试' };
+    console.error("登录异常：", err);
+    return { success: false, message: "登录失败，请重试" };
+  }
+}
+
+/** 退出登录 */
+export async function logout(): Promise<BaseResponse> {
+  try {
+    const cookieStore = await cookies();
+    cookieStore.delete("auth_token");
+    return { success: true, message: "退出登录成功" };
+  } catch (err) {
+    console.error("退出登录异常：", err);
+    return { success: false, message: "退出登录失败" };
   }
 }
