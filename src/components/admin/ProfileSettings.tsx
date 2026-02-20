@@ -300,7 +300,7 @@ export default function ProfileSettings() {
             <Card title="头像与状态" bordered={false} className="h-full">
               <Skeleton loading animation>
                 <div className="flex flex-col items-center py-6">
-                  <div className="mb-4 h-[100px] w-[100px] rounded-full bg-gray-200 dark:bg-gray-700" />
+                  <div className="mb-4 h-25 w-25 rounded-full bg-gray-200 dark:bg-gray-700" />
                   <div className="mb-2 h-6 w-32 rounded bg-gray-200 dark:bg-gray-700" />
                   <div className="h-4 w-24 rounded bg-gray-100 dark:bg-gray-800" />
                 </div>
