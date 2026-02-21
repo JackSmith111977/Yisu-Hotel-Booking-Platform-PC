@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "@arco-design/web-react/dist/css/arco.css";
 import "@arco-design/web-react/es/_util/react-19-adapter";
+import "./globals.css";
 import { Toaster } from "sonner";
 
 const geistSans = Geist({
@@ -31,8 +32,8 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         {children}
-        <Toaster position="top-center" richColors /> 
-      </body>      
+        <Toaster position="top-center" richColors />
+      </body>
     </html>
   );
 }
