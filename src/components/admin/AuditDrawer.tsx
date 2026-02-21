@@ -92,6 +92,21 @@ export default function AuditDrawer({
               width={400}
               height={300}
               style={{ objectFit: "cover" }}
+              error={
+                <div
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "var(--color-fill-2)",
+                    color: "var(--color-text-3)",
+                  }}
+                >
+                  图片加载失败
+                </div>
+              }
             />
           </div>
         ) : (
@@ -184,7 +199,46 @@ export default function AuditDrawer({
                           { label: "描述", value: room.description || "暂无描述" },
                         ]}
                       />
-                      {/* 如果有房型图片也可以在这里展示 */}
+                      {room.images && room.images.length > 0 && (
+                        <div style={{ marginTop: 12 }}>
+                          <Typography.Text
+                            type="secondary"
+                            style={{ fontSize: 12, marginBottom: 8, display: "block" }}
+                          >
+                            房型图集
+                          </Typography.Text>
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                            <Image.PreviewGroup>
+                              {room.images.map((img, index) => (
+                                <Image
+                                  key={index}
+                                  src={img}
+                                  width={80}
+                                  height={60}
+                                  alt={room.name}
+                                  style={{ borderRadius: 4, objectFit: "cover" }}
+                                  error={
+                                    <div
+                                      style={{
+                                        width: "100%",
+                                        height: "100%",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        backgroundColor: "var(--color-fill-2)",
+                                        color: "var(--color-text-3)",
+                                        fontSize: 12,
+                                      }}
+                                    >
+                                      失效
+                                    </div>
+                                  }
+                                />
+                              ))}
+                            </Image.PreviewGroup>
+                          </div>
+                        </div>
+                      )}
                     </Collapse.Item>
                   ))}
                 </Collapse>
@@ -213,6 +267,22 @@ export default function AuditDrawer({
                     height={75}
                     style={{ objectFit: "cover", borderRadius: 4 }}
                     alt={`image-${idx}`}
+                    error={
+                      <div
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          backgroundColor: "var(--color-fill-2)",
+                          color: "var(--color-text-3)",
+                          fontSize: 12,
+                        }}
+                      >
+                        失效
+                      </div>
+                    }
                   />
                 ))
               ) : (
