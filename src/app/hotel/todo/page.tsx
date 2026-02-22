@@ -1,5 +1,5 @@
 "use client";
-import { Tabs, Badge, Modal } from '@arco-design/web-react';
+import { Tabs, Badge, Modal, Card } from '@arco-design/web-react';
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { getHotels, deleteHotel } from '@/actions/hotels';
 import { MineHotelInformationType } from '@/types/HotelInformation';
@@ -87,6 +87,7 @@ export default function TodoPage() {
   };
 
   return (
+    <Card style={{ height: "100%" }}>
     <div style={{ padding: 24 }}>
       <Tabs defaultActiveTab='draft' activeTab={activeTab} onChange={setActiveTab} type="line" >
         <TabPane
@@ -151,6 +152,6 @@ export default function TodoPage() {
         <p style={{ margin: 0 }}>确定要删除这个酒店吗？此操作不可恢复。</p>
       </Modal>
     </div>
-    
+    </Card>
   );
 }

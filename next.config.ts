@@ -15,6 +15,7 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  reactStrictMode: false,  // 打包后可以注释
 };
 
 export default nextConfig;

@@ -2,6 +2,7 @@
 import { Card, Typography, Empty, Spin } from '@arco-design/web-react';
 import { IconExclamationCircle } from '@arco-design/web-react/icon';
 import dayjs from 'dayjs';
+import { useThemeStore } from '@/store/useThemeStore';
 
 interface RejectedHotel {
   id: number;
@@ -18,6 +19,9 @@ interface RejectedListProps {
 }
 
 export default function RejectedList({ data, loading, onEdit, onDelete }: RejectedListProps) {
+  const theme = useThemeStore((state) => state.theme);
+  const isDark = theme === 'dark';
+
   if (loading) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
@@ -31,61 +35,49 @@ export default function RejectedList({ data, loading, onEdit, onDelete }: Reject
   }
 
   return (
-    <div style={{ 
-      display: 'grid', 
-      gridTemplateColumns: 'repeat(3, 1fr)', 
-      gap: 16 
-    }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
       {data.map((hotel) => (
         <Card
           key={hotel.id}
           style={{ 
-            backgroundColor: '#FEF0F0',
-            border: 'none',
+            backgroundColor: isDark ? '#271010' : '#FEF0F0',
+            border: `1px solid transparent`,
           }}
           bodyStyle={{ padding: '16px' }}
         >
           <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
             <IconExclamationCircle style={{ color: '#C53030', fontSize: 16, marginTop: 2, flexShrink: 0 }} />
             <div style={{ flex: 1, minWidth: 0 }}>
-                <Typography.Title heading={6} style={{ margin: 0, marginBottom: 8 }} ellipsis>
-                    {hotel.name_zh}
-                </Typography.Title>
-              
-                <Typography.Text 
-                    style={{ color: '#666', display: 'block', marginBottom: 8, fontSize: 13}}
-                    ellipsis={{ rows: 2 }}
-                >
-                    拒绝原因：{hotel.rejected_reason || '未填写'}
+              <Typography.Title heading={6} style={{ margin: 0, marginBottom: 8 }} ellipsis>
+                {hotel.name_zh}
+              </Typography.Title>
+
+              <Typography.Text
+                style={{ color: isDark ? '#9ca3af' : '#666', display: 'block', marginBottom: 8, fontSize: 13 }}
+                ellipsis={{ rows: 2 }}
+              >
+                拒绝原因：{hotel.rejected_reason || '未填写'}
+              </Typography.Text>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                  {dayjs(hotel.updated_at).format('YYYY-MM-DD HH:mm')}
                 </Typography.Text>
-              
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                      {dayjs(hotel.updated_at).format('YYYY-MM-DD HH:mm')}
+
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <Typography.Text
+                    style={{ color: isDark ? '#6b7280' : '#999', cursor: 'pointer', fontSize: 13 }}
+                    onClick={() => onDelete?.(hotel.id)}
+                  >
+                    删除
                   </Typography.Text>
-                  
-                  <div style={{ display: 'flex', gap: 12 }}>
-                      <Typography.Text
-                          style={{ 
-                              color: '#999', 
-                              cursor: 'pointer',
-                              fontSize: 13,
-                          }}
-                          onClick={() => onDelete?.(hotel.id)}
-                      >
-                          删除
-                      </Typography.Text>
-                      <Typography.Text
-                          style={{ 
-                              color: '#1890ff', 
-                              cursor: 'pointer',
-                              fontSize: 13,
-                          }}
-                          onClick={() => onEdit?.(hotel.id)}
-                      >
-                          去修改 →
-                      </Typography.Text>
-                  </div>
+                  <Typography.Text
+                    style={{ color: '#1890ff', cursor: 'pointer', fontSize: 13 }}
+                    onClick={() => onEdit?.(hotel.id)}
+                  >
+                    去修改 →
+                  </Typography.Text>
+                </div>
               </div>
             </div>
           </div>

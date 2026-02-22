@@ -107,6 +107,8 @@ export interface MineHotelInformationType {
   updated_at: string; // 更新日期
   merchant_id?: string; // 商户id(暂定不需要)
   rejected_reason?: string;
+  tags?: string[];
+  policy?: string[];
 }
 // 1. 新增床型信息接口 (建议放在文件头部或 HotelRoomTypesForAdmin 附近)
 /**
@@ -198,3 +200,11 @@ export type AddressDataType = {
     [city: string]: string[];
   };
 };
+
+export interface HotelPolicyType {
+  check_in_time?: string;        // "14:00"
+  check_out_time?: string;       // "12:00"
+  pet_policy?: 'allowed' | 'not_allowed';
+  extra_bed_policy?: 'free' | 'charged' | 'not_available';
+  invoice_policy?: 'available' | 'not_available';
+}

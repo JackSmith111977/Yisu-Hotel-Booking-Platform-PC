@@ -19,6 +19,8 @@ import ImageUploader, { UploadedImage } from './ImageUploader';
 import { uploadHotelImages, deleteStorageFolder } from '@/actions/hotels';
 import { Dispatch, SetStateAction, useEffect } from 'react';
 import { toast } from 'sonner';
+import HotelTagSelector from './HotelTagSelector';
+import HotelPolicyForm from './Hotelpolicyform';
 
 const FormItem = Form.Item;
 const { Row, Col } = Grid;
@@ -65,12 +67,13 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                 opening_date: values.openingDate,
                 contact_phone: values.contactPhone,
                 status: okStatus === 'draft' ? 'draft' : 'pending',
+                tags: values.tags ?? [],
+                policy: values.policy ?? {},
                 // 图片字段先不在此处填入，创建/编辑分支各自处理后再传入
             };
     
             if (initialData) {
-                // ── 编辑模式 ─────────────────────────────────────────────────────
-    
+                // 编辑模式    
                 // 新增：上传酒店图片（先清理旧文件，再上传新图）
                 const editImgInputs: UploadedImage[] = values.hotelImages ?? [];
                 const editImgDataUrls = editImgInputs.map(img => img.remoteUrl ?? img.dataUrl);
@@ -82,16 +85,16 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
     
                 const hotel = await updateHotel(initialData.id as number, {
                     ...hotelData,
-                    image: uploadedHotelUrls[0] ?? null,    // 新增：首图
-                    album: uploadedHotelUrls.slice(1),      // 新增：相册
+                    image: uploadedHotelUrls[0] ?? null,
+                    album: uploadedHotelUrls.slice(1),
                 });
     
                 if (hotel) {
                     if (values.roomTypes?.length > 0) {
-                        // 新增：map 改为 async + Promise.all，支持房型图片上传
+                        // map 改为 async + Promise.all，支持房型图片上传
                         const roomTypesData = await Promise.all(
                             values.roomTypes.map(async (room: HotelRoomTypes & { images?: UploadedImage[] }, index: number) => {
-                                // 新增：上传房型图片
+                                // 上传房型图片
                                 const roomImgDataUrls = (room.images ?? []).map(img => {
                                     const i = img as unknown as UploadedImage;
                                     console.log('img item:', i, 'remoteUrl:', i.remoteUrl, 'dataUrl:', i.dataUrl);
@@ -126,13 +129,12 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                 }
     
             } else {
-                // ── 创建模式 ─────────────────────────────────────────────────────
-    
+                //创建模式    
                 // 先 insert 酒店骨架（不含图片），拿到 id 后再上传
                 const hotel = await createHotels(hotelData as MineHotelInformationType);
     
                 if (hotel) {
-                    // 新增：拿到 hotel.id 后上传酒店图片，再 update 图片字段
+                    // 拿到 hotel.id 后上传酒店图片，再 update 图片字段
                     const hotelImgInputs: UploadedImage[] = values.hotelImages ?? [];
                     const hotelImgDataUrls = hotelImgInputs.map(img => img.remoteUrl ?? img.dataUrl);
                     const uploadedHotelUrls = await uploadHotelImages(
@@ -140,15 +142,15 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                         `hotel_${hotel.id}`,
                     );
                     await updateHotel(hotel.id, {
-                        image: uploadedHotelUrls[0] ?? null,    // 新增：首图
-                        album: uploadedHotelUrls.slice(1),      // 新增：相册
+                        image: uploadedHotelUrls[0] ?? null,
+                        album: uploadedHotelUrls.slice(1),
                     });
     
                     if (values.roomTypes?.length > 0) {
-                        // 新增：同编辑模式，改为 async + Promise.all
+                        // 同编辑模式，改为 async + Promise.all
                         const roomTypesData = await Promise.all(
                             values.roomTypes.map(async (room: HotelRoomTypes & { images?: UploadedImage[] }, index: number) => {
-                                // 新增：上传房型图片
+                                // 上传房型图片
                                 const roomImgDataUrls = (room.images ?? []).map(img => {
                                     const i = img as unknown as UploadedImage;
                                     console.log('img item:', i, 'remoteUrl:', i.remoteUrl, 'dataUrl:', i.dataUrl);
@@ -165,7 +167,7 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                                     quantity: room.quantity,
                                     size: room.size,
                                     description: room.description || '',
-                                    images: uploadedRoomUrls,   // 新增：房型图片 URL 数组
+                                    images: uploadedRoomUrls,   // 房型图片 URL 数组
                                 };
                             })
                         );
@@ -187,10 +189,11 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
 
     const formItemLayout = {
         labelCol: {
-        span: 4,
+            span: 5,
+            // style: { textAlign: 'right' }
         },
         wrapperCol: {
-        span: 20,
+        span: 19,
         },
     };
 
@@ -232,6 +235,8 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                 // 新增：将 string[] 转成 UploadedImage[] 供 ImageUploader 展示
                 images: (rt.images ?? []).map((url: string) => ({ dataUrl: url, remoteUrl: url })),
             })),
+            tags: initialData.tags ?? [],
+            policy: initialData.policy ?? {},
           });
         } else if (modalVisible) {
           // 新建模式清空表单
@@ -258,8 +263,8 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                 <Form
                     {...formItemLayout}
                     form={form}
-                    labelCol={{ style: { flexBasis: 150 } }}
-                    wrapperCol={{ style: { flexBasis: 'calc(95% - 150px)' } }}
+                    requiredSymbol={{ position: 'start' }}
+                    style={{ maxWidth: 2000 }}
                     scrollToFirstError
                 >
                     {/* 基本信息 */}
@@ -330,13 +335,24 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                             label="酒店图片"
                             field="hotelImages"
                             rules={[{
+                                required: true,
                                 validator: (value, callback) =>
                                     (value?.length ?? 0) === 0 ? callback('请至少上传一张酒店图片') : callback()
                             }]}
                         >
                             <ImageUploader max={9} label="酒店图片" />
-                        </FormItem>                     
+                        </FormItem>
+
+                        <FormItem
+                            label="酒店标签"
+                            field="tags"
+                        >
+                            <HotelTagSelector />
+                        </FormItem>                        
                     </Card>
+
+                    {/* 酒店政策 */}
+                    <HotelPolicyForm />
     
                     {/* 房型信息 - 动态表单 */}
                     <Card title="房型信息" style={{ marginBottom: 16 }}>
@@ -442,6 +458,7 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                                                 labelCol={{ span: 4 }}
                                                 wrapperCol={{ span: 20 }}
                                                 rules={[{
+                                                    required: true,
                                                     validator: (value, callback) =>
                                                         (value?.length ?? 0) === 0 ? callback('请至少上传一张房型图片') : callback()
                                                 }]}

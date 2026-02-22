@@ -2,5 +2,7 @@
 import HotelManagement from "@/components/hotel/HotelManagement";
 
 export default function DraftPage() {
-  return <HotelManagement statusFilter={false} />
+  return (
+    <HotelManagement statusFilter={false} />
+  )
 }

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useMemo } from 'react';
 import * as echarts from 'echarts';
 import { Card } from '@arco-design/web-react';
+import { useThemeStore } from '@/store/useThemeStore';
 
 export interface StatusData {
   status: string;
@@ -17,13 +18,23 @@ interface StatusPieChartProps {
 const StatusEChart = ({ data, title, statusColorMap, height = 350 }: StatusPieChartProps) => {
   const chartRef = useRef<HTMLDivElement>(null);
   const chartInstance = useRef<echarts.ECharts | null>(null);
+  const theme = useThemeStore((state) => state.theme);
 
   const filteredData = useMemo(() => data.filter(item => item.count > 0), [data]);
-
   const total = useMemo(() => filteredData.reduce((sum, item) => sum + item.count, 0), [filteredData]);
 
   useEffect(() => {
     if (!chartRef.current) return;
+
+    const isDark = theme === 'dark';
+    const textColor = isDark ? '#e5e7eb' : '#1D2129';
+    const subTextColor = isDark ? '#9ca3af' : '#86909C';
+    const legendTextColor = isDark ? '#d1d5db' : '#4e5969';
+
+    // 销毁旧实例，避免主题切换时残留
+    if (chartInstance.current) {
+      chartInstance.current.dispose();
+    }
 
     chartInstance.current = echarts.init(chartRef.current);
 
@@ -35,8 +46,10 @@ const StatusEChart = ({ data, title, statusColorMap, height = 350 }: StatusPieCh
       legend: {
         orient: 'horizontal',
         bottom: 10,
-        // 使用过滤后的数据
         data: filteredData.map(item => item.status),
+        textStyle: {
+          color: legendTextColor,
+        },
       },
       series: [
         {
@@ -47,12 +60,13 @@ const StatusEChart = ({ data, title, statusColorMap, height = 350 }: StatusPieCh
           avoidLabelOverlap: true,
           itemStyle: {
             borderRadius: 4,
-            borderColor: '#fff',
+            borderColor: isDark ? '#1f2937' : '#fff',
             borderWidth: 2,
           },
           label: {
             show: true,
             formatter: '{b}: {c}',
+            color: textColor,
           },
           emphasis: {
             label: {
@@ -83,7 +97,7 @@ const StatusEChart = ({ data, title, statusColorMap, height = 350 }: StatusPieCh
           style: {
             text: '总计',
             fontSize: 14,
-            fill: '#86909C',
+            fill: subTextColor,
           },
         },
         {
@@ -94,7 +108,7 @@ const StatusEChart = ({ data, title, statusColorMap, height = 350 }: StatusPieCh
             text: String(total),
             fontSize: 24,
             fontWeight: 'bold',
-            fill: '#1D2129',
+            fill: textColor,
           },
         },
       ],
@@ -111,7 +125,7 @@ const StatusEChart = ({ data, title, statusColorMap, height = 350 }: StatusPieCh
       window.removeEventListener('resize', handleResize);
       chartInstance.current?.dispose();
     };
-  }, [filteredData, total]);
+  }, [filteredData, total, theme]);
 
   return (
     <Card title={title} style={{ width: '100%', maxWidth: 500 }}>

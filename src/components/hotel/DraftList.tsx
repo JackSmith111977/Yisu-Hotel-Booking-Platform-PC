@@ -12,7 +12,7 @@ interface DraftHotel {
   star_rating?: number | null;
   total_rooms?: number | null;
   updated_at: string;
-  cover_image_url?: string | null;
+  image?: string | null;
 }
 
 interface DraftListProps {
@@ -62,7 +62,7 @@ export default function DraftList({ data, loading, onEdit, onDelete }: DraftList
             style={{ 
               height: 140, 
               backgroundColor: '#f5f5f5',
-              backgroundImage: hotel.cover_image_url ? `url(${hotel.cover_image_url})` : undefined,
+              backgroundImage: hotel.image ? `url(${hotel.image})` : undefined,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
               display: 'flex',
@@ -70,7 +70,7 @@ export default function DraftList({ data, loading, onEdit, onDelete }: DraftList
               justifyContent: 'center',
             }}
           >
-            {!hotel.cover_image_url && (
+            {!hotel.image && (
               <IconHome style={{ fontSize: 48, color: '#ccc' }} />
             )}
           </div>
