@@ -5,9 +5,8 @@ import CreateButton from "@/components/hotel/CreateButton";
 import HotelDrawer from "@/components/hotel/HotelDrawer";
 import { MineHotelInformationType } from "@/types/HotelInformation";
 import { useState, useCallback, useEffect } from "react";
-import { Input, Message } from "@arco-design/web-react";
+import { Input, Message, Card } from "@arco-design/web-react";
 import { getHotels, deleteHotel } from "@/actions/hotels";
-
 
 interface Props { statusFilter: boolean }
 
@@ -77,13 +76,11 @@ export default function HotelManagement({ statusFilter }: Props) {
   }, [fetchData, reloadKey])
 
   return (
-    <div style={{ background: "#272727", width: "100%", height: "100%" }}>
+    <Card style={{ height: "100vh" }}>
+    <div style={{ width: "100%", height: "100%" }}>
       <div style={{ padding: '10px 10px 0 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <CreateButton handleCreate={handleCreate} />
-          {/* <div style={{ color: '#fff', fontSize: 14 }}>
-            您还有{draftCount}个草稿未处理。
-          </div> */}
         </div>
         <Input.Search
           placeholder="搜索酒店名称/地址"
@@ -106,5 +103,6 @@ export default function HotelManagement({ statusFilter }: Props) {
 
       <HotelModal modalVisible={modalVisible} setModalVisible={setModalVisible} initialData={currentHotel} onCreated={() => setReloadKey(k => k + 1)} />
     </div>
+    </Card>
   );
 }

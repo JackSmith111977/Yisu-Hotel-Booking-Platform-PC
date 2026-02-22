@@ -27,10 +27,7 @@ const AlertBanners = ({ draftCount = 0, rejectedRoomCount = 0}: AlertBannersProp
                 </Link>
             </div>
             }
-            style={{
-              backgroundColor: '#eee ',
-              border: '1px solid #eee ',
-            }}
+            className="dark:bg-gray-700 dark:border-gray-600"
         />
       )}
 

@@ -4,14 +4,19 @@ import StatusEChart from "@/components/hotel/StatusEChart";
 import { useState, useEffect, useMemo } from "react";
 import { getHotels } from "@/actions/hotels";
 import { MineHotelInformationType } from "@/types/HotelInformation";
+import { Spin, Card } from "@arco-design/web-react";
 
 export default function DashboardPage() {
   const [allData, setAllData] = useState<MineHotelInformationType[]>([]);
+  const [loading, setLoading] = useState(true); // 保证 EChart 数据只渲染一次
 
   useEffect(() => {
     const fetchData = async () => {
+      console.log('fetch start');
       const data = await getHotels() || [];
+      console.log('fetch done', data.length);
       setAllData(data);
+      setLoading(false);
     };
     fetchData();
   }, []);
@@ -48,13 +53,21 @@ export default function DashboardPage() {
     [allData]
   );
 
+  if (loading) return (
+    <Card style={{ height: "100vh" }}>
+      <Spin />
+    </Card>
+  );
+
   return (
-    <div>
+    <Card style={{ height: "100vh" }}>
+    <div >
       <AlertBanners draftCount={draftCount} rejectedRoomCount={rejectedRoomCount} />
       <div style={{ display: 'flex', gap: '24px', marginTop: '24px', justifyContent: 'center' }}>      
         <StatusEChart data={auditData} statusColorMap={auditColorMap} title="审核状态分布"/>
         <StatusEChart data={onlineData} statusColorMap={onlineColorMap} title="上线状态分布"/>
       </div>
     </div>
+    </Card>
   )
 }
