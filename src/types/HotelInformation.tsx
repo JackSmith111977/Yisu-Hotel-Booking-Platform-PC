@@ -108,7 +108,6 @@ export interface MineHotelInformationType {
   merchant_id?: string; // 商户id(暂定不需要)
   rejected_reason?: string;
   tags?: string[];
-  policy?: string[];
 }
 // 1. 新增床型信息接口 (建议放在文件头部或 HotelRoomTypesForAdmin 附近)
 /**
@@ -156,12 +155,15 @@ export interface HotelRoomTypesForAdmin {
 
 export interface HotelRoomTypes {
   id: string;
+  hotel_id: string;
   name: string;
   price: number;
-  quantity: number; // 房间数量
-  size: number; // 房间大小
-  description: string; // 房间描述
+  size: number;
+  description: string;
+  max_guests: number;
+  beds: { type: string; count: number }[];
   images?: string[];
+  facilities?: string[];
 }
 
 // export interface HotelImageType {

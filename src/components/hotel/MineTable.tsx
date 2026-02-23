@@ -146,7 +146,7 @@ const MineTable = memo(function MineTable({ onEdit, data, onDelete, statusFilter
         columns={hotelColumns} 
         data={data} 
         expandedRowRender={cur => (
-          <Table rowKey="id" columns={roomColumns} data={cur.room_types} pagination={false} style={{ backgroundColor: '#fff' }}/>
+          <Table rowKey="id" columns={roomColumns} data={cur.room_types} pagination={false}/>
         )} 
       />
       {/* 确认删除弹窗 */}
