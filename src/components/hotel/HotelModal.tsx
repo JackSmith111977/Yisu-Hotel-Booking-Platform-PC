@@ -10,7 +10,8 @@ import {
     Card,
     Grid,
     Rate,
-    Cascader
+    Cascader,
+    Select
 } from '@arco-design/web-react';
 import { IconPlus, IconDelete } from '@arco-design/web-react/icon';
 import pcaData from 'china-division/dist/pca.json'
@@ -20,7 +21,7 @@ import { uploadHotelImages, deleteStorageFolder } from '@/actions/hotels';
 import { Dispatch, SetStateAction, useEffect } from 'react';
 import { toast } from 'sonner';
 import HotelTagSelector from './HotelTagSelector';
-import HotelPolicyForm from './Hotelpolicyform';
+import RoomTagSelector from './RoomTagSelector';
 
 const FormItem = Form.Item;
 const { Row, Col } = Grid;
@@ -48,6 +49,17 @@ function transformData(data: AddressDataType) {
     }))
 }
 
+// 床型选项
+const BED_TYPE_OPTIONS = [
+    { label: '大床', value: '大床' },
+    { label: '双床', value: '双床' },
+    { label: '单床', value: '单床' },
+    { label: '上下铺', value: '上下铺' },
+    { label: '沙发床', value: '沙发床' },
+];
+
+const OPTIONS = transformData(pcaData)
+
 const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: HotelModalProps) => {
     const [confirmLoading, setConfirmLoading] = useState(false);
     const [confirmVisible, setConfirmVisible] = useState(false);    // 确认弹窗状态
@@ -68,13 +80,10 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                 contact_phone: values.contactPhone,
                 status: okStatus === 'draft' ? 'draft' : 'pending',
                 tags: values.tags ?? [],
-                policy: values.policy ?? {},
-                // 图片字段先不在此处填入，创建/编辑分支各自处理后再传入
             };
     
             if (initialData) {
                 // 编辑模式    
-                // 新增：上传酒店图片（先清理旧文件，再上传新图）
                 const editImgInputs: UploadedImage[] = values.hotelImages ?? [];
                 const editImgDataUrls = editImgInputs.map(img => img.remoteUrl ?? img.dataUrl);
                 await deleteStorageFolder(`hotel_${initialData.id}`);
@@ -91,13 +100,10 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
     
                 if (hotel) {
                     if (values.roomTypes?.length > 0) {
-                        // map 改为 async + Promise.all，支持房型图片上传
                         const roomTypesData = await Promise.all(
                             values.roomTypes.map(async (room: HotelRoomTypes & { images?: UploadedImage[] }, index: number) => {
-                                // 上传房型图片
                                 const roomImgDataUrls = (room.images ?? []).map(img => {
                                     const i = img as unknown as UploadedImage;
-                                    console.log('img item:', i, 'remoteUrl:', i.remoteUrl, 'dataUrl:', i.dataUrl);
                                     return i.remoteUrl ?? i.dataUrl;
                                 });
                                 const uploadedRoomUrls = await uploadHotelImages(
@@ -107,10 +113,12 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                                 return {
                                     name: room.name || '',
                                     price: room.price,
-                                    quantity: room.quantity,
                                     size: room.size,
+                                    max_guests: room.max_guests,
+                                    beds: room.beds ?? [],
+                                    facilities: room.facilities ?? [],
                                     description: room.description || '',
-                                    images: uploadedRoomUrls,   // 新增：房型图片 URL 数组
+                                    images: uploadedRoomUrls,
                                 };
                             })
                         );
@@ -120,7 +128,7 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                         await replaceRoomTypes(initialData.id as number, []);
                     }
     
-                    toast.success('更新成功');
+                    toast.success(okStatus === 'draft' ? '草稿已保存' : '更新成功');
                     setModalVisible(false);
                     if (onCreated) onCreated();
                     form.resetFields();
@@ -129,12 +137,10 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                 }
     
             } else {
-                //创建模式    
-                // 先 insert 酒店骨架（不含图片），拿到 id 后再上传
+                // 创建模式    
                 const hotel = await createHotels(hotelData as MineHotelInformationType);
     
                 if (hotel) {
-                    // 拿到 hotel.id 后上传酒店图片，再 update 图片字段
                     const hotelImgInputs: UploadedImage[] = values.hotelImages ?? [];
                     const hotelImgDataUrls = hotelImgInputs.map(img => img.remoteUrl ?? img.dataUrl);
                     const uploadedHotelUrls = await uploadHotelImages(
@@ -147,13 +153,10 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                     });
     
                     if (values.roomTypes?.length > 0) {
-                        // 同编辑模式，改为 async + Promise.all
                         const roomTypesData = await Promise.all(
                             values.roomTypes.map(async (room: HotelRoomTypes & { images?: UploadedImage[] }, index: number) => {
-                                // 上传房型图片
                                 const roomImgDataUrls = (room.images ?? []).map(img => {
                                     const i = img as unknown as UploadedImage;
-                                    console.log('img item:', i, 'remoteUrl:', i.remoteUrl, 'dataUrl:', i.dataUrl);
                                     return i.remoteUrl ?? i.dataUrl;
                                 });
                                 const uploadedRoomUrls = await uploadHotelImages(
@@ -164,10 +167,12 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                                     hotel_id: hotel.id,
                                     name: room.name || '',
                                     price: room.price,
-                                    quantity: room.quantity,
                                     size: room.size,
+                                    max_guests: room.max_guests,
+                                    beds: room.beds ?? [],
+                                    facilities: room.facilities ?? [],
                                     description: room.description || '',
-                                    images: uploadedRoomUrls,   // 房型图片 URL 数组
+                                    images: uploadedRoomUrls,
                                 };
                             })
                         );
@@ -175,40 +180,36 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                         await createRoomTypes(roomTypesData);
                     }
     
+                    toast.success(okStatus === 'draft' ? '草稿已保存' : '提交成功');
                     setModalVisible(false);
                     if (onCreated) onCreated();
                     form.resetFields();
+                } else {
+                    toast.error('创建失败');
                 }
             }
         } catch (error) {
             console.error('创建/更新失败:', error);
+            const message = error instanceof Error ? error.message : '未知错误';
+            toast.error(`操作失败：${message}`);
         } finally {
             setConfirmLoading(false);
         }
     };
 
     const formItemLayout = {
-        labelCol: {
-            span: 5,
-            // style: { textAlign: 'right' }
-        },
-        wrapperCol: {
-        span: 19,
-        },
+        labelCol: { span: 5 },
+        wrapperCol: { span: 19 },
     };
 
-    const OPTIONS = transformData(pcaData)
-
-    // 取消处理函数
     function handleCancel() {
         if (form.getTouchedFields().length > 0) {
-            setConfirmVisible(true);  // 显示确认弹窗
+            setConfirmVisible(true);
         } else {
             setModalVisible(false);
         }
     }
 
-    // 确认放弃更改
     function handleConfirmDiscard() {
         form.resetFields();     
         setConfirmVisible(false)   
@@ -217,7 +218,6 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
 
     useEffect(() => {
         if (modalVisible && initialData) {
-          // 编辑模式填充数据
           form.setFieldsValue({
             nameZh: initialData.name_zh,
             nameEn: initialData.name_en,
@@ -232,14 +232,12 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
             ],
             roomTypes: (initialData.room_types ?? []).map(rt => ({
                 ...rt,
-                // 新增：将 string[] 转成 UploadedImage[] 供 ImageUploader 展示
                 images: (rt.images ?? []).map((url: string) => ({ dataUrl: url, remoteUrl: url })),
+                // facilities 直接透传（原来的 tags 字段已对应 facilities）
             })),
             tags: initialData.tags ?? [],
-            policy: initialData.policy ?? {},
           });
         } else if (modalVisible) {
-          // 新建模式清空表单
           form.resetFields();
         }
       }, [modalVisible, initialData, form]);
@@ -252,6 +250,7 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                 visible={modalVisible}
                 confirmLoading={confirmLoading}
                 onCancel={() => handleCancel()}
+                getPopupContainer={() => document.body} // 指向离它最近的固定容器
                 footer={
                     <>
                       <Button onClick={() => handleCancel()}>取消</Button>
@@ -291,10 +290,6 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                             rules={[{ required: true, message: '请输入酒店地址' }]}
                         >
                             <Cascader options={OPTIONS} placeholder="请选择地区" />
-                            {/* <Input.TextArea 
-                                placeholder='请输入酒店详细地址' 
-                                autoSize={{ minRows: 2, maxRows: 4 }}
-                            /> */}
                         </FormItem>
 
                         <Form.Item label="详细地址" field="address" rules={[{ required: true }]}>
@@ -350,9 +345,6 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                             <HotelTagSelector />
                         </FormItem>                        
                     </Card>
-
-                    {/* 酒店政策 */}
-                    <HotelPolicyForm />
     
                     {/* 房型信息 - 动态表单 */}
                     <Card title="房型信息" style={{ marginBottom: 16 }}>
@@ -362,7 +354,7 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                                     {fields.map((field, index) => (
                                         <Card 
                                             key={field.key} 
-                                            style={{ marginBottom: 16, backgroundColor: '#fafafa' }}
+                                            style={{ marginBottom: 16, backgroundColor: 'var(--color-fill-2)' }}
                                             title={`房型 ${index + 1}`}
                                             extra={
                                                 fields.length > 1 && (
@@ -407,23 +399,8 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                                                     </FormItem>
                                                 </Col>
                                             </Row>
+
                                             <Row gutter={16}>
-                                                <Col span={12}>
-                                                    <FormItem 
-                                                        label='房间数量' 
-                                                        field={`${field.field}.quantity`}
-                                                        rules={[{ required: true, message: '请输入房间数量' }]}
-                                                        labelCol={{ span: 9 }}
-                                                        wrapperCol={{ span: 15 }}
-                                                    >
-                                                        <InputNumber 
-                                                            placeholder='请输入数量'
-                                                            min={1}
-                                                            style={{ width: '100%' }}
-                                                            suffix='间'
-                                                        />
-                                                    </FormItem>
-                                                </Col>
                                                 <Col span={12}>
                                                     <FormItem 
                                                         label='房间面积' 
@@ -440,7 +417,94 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                                                         />
                                                     </FormItem>
                                                 </Col>
+                                                <Col span={12}>
+                                                    {/* 新增：最大入住人数 */}
+                                                    <FormItem 
+                                                        label='最大入住人数' 
+                                                        field={`${field.field}.max_guests`}
+                                                        rules={[{ required: true, message: '请输入最大入住人数' }]}
+                                                        labelCol={{ span: 9 }}
+                                                        wrapperCol={{ span: 15 }}
+                                                    >
+                                                        <InputNumber 
+                                                            placeholder='请输入人数'
+                                                            min={1}
+                                                            style={{ width: '100%' }}
+                                                            suffix='人'
+                                                        />
+                                                    </FormItem>
+                                                </Col>
                                             </Row>
+
+                                            {/* 新增：床型信息（动态列表） */}
+                                            <FormItem
+                                                label="床型配置"
+                                                labelCol={{ span: 4 }}
+                                                wrapperCol={{ span: 20 }}
+                                            >
+                                                <Form.List field={`${field.field}.beds`}>
+                                                    {(bedFields, { add: addBed, remove: removeBed }) => (
+                                                        <>
+                                                            {bedFields.map((bedField, bedIndex) => (
+                                                                <Row key={bedField.key} gutter={8} style={{ marginBottom: 8 }}>
+                                                                    <Col span={11}>
+                                                                        <FormItem
+                                                                            field={`${bedField.field}.type`}
+                                                                            rules={[{ required: true, message: '请选择床型' }]}
+                                                                            noStyle={false}
+                                                                            style={{ marginBottom: 0 }}
+                                                                        >
+                                                                            <Select placeholder="请选择床型" options={BED_TYPE_OPTIONS} />
+                                                                        </FormItem>
+                                                                    </Col>
+                                                                    <Col span={10}>
+                                                                        <FormItem
+                                                                            field={`${bedField.field}.count`}
+                                                                            rules={[{ required: true, message: '请输入数量' }]}
+                                                                            noStyle={false}
+                                                                            style={{ marginBottom: 0 }}
+                                                                        >
+                                                                            <InputNumber
+                                                                                placeholder='数量'
+                                                                                min={1}
+                                                                                style={{ width: '100%' }}
+                                                                                suffix='张'
+                                                                            />
+                                                                        </FormItem>
+                                                                    </Col>
+                                                                    <Col span={3} style={{ display: 'flex', alignItems: 'center' }}>
+                                                                        <Button
+                                                                            icon={<IconDelete />}
+                                                                            status='danger'
+                                                                            type='text'
+                                                                            onClick={() => removeBed(bedIndex)}
+                                                                        />
+                                                                    </Col>
+                                                                </Row>
+                                                            ))}
+                                                            <Button
+                                                                type='dashed'
+                                                                size='small'
+                                                                icon={<IconPlus />}
+                                                                onClick={() => addBed()}
+                                                            >
+                                                                添加床型
+                                                            </Button>
+                                                        </>
+                                                    )}
+                                                </Form.List>
+                                            </FormItem>
+
+                                            {/* facilities（原 tags 字段改名） */}
+                                            <FormItem
+                                                label="房间设施"
+                                                field={`${field.field}.facilities`}
+                                                labelCol={{ span: 4 }}
+                                                wrapperCol={{ span: 20 }}
+                                            >
+                                                <RoomTagSelector />
+                                            </FormItem>
+
                                             <FormItem 
                                                 label='房型描述' 
                                                 field={`${field.field}.description`}
@@ -452,6 +516,7 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                                                     autoSize={{ minRows: 2, maxRows: 4 }}
                                                 />
                                             </FormItem>
+
                                             <FormItem
                                                 label="房型图片"
                                                 field={`${field.field}.images`}

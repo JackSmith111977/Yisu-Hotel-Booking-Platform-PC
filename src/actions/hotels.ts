@@ -102,8 +102,10 @@ export async function replaceRoomTypes(hotelId: number, roomTypes: Partial<Hotel
         hotel_id: hotelId,
         name: rt.name,
         price: rt.price,
-        quantity: rt.quantity,
         size: rt.size,
+        max_guests: rt.max_guests,      // 新增
+        beds: rt.beds ?? [],             // 新增
+        facilities: rt.facilities ?? [], // 新增
         description: rt.description,
         images: rt.images
     }));
