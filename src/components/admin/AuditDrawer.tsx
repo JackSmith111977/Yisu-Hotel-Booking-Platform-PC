@@ -186,7 +186,7 @@ export default function AuditDrawer({
                         labelStyle={{ width: 80 }}
                         data={[
                           { label: "价格", value: `¥${room.price}` },
-                          { label: "数量", value: room.quantity },
+                          { label: "数量", value: 5 },
                           { label: "面积", value: `${room.size} m²` },
                           {
                             label: "最大入住",
