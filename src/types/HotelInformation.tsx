@@ -151,6 +151,7 @@ export interface HotelRoomTypesForAdmin {
   images?: string[]; // 对应 images jsonb
   facilities?: string[]; // 对应 facilities jsonb
   hotel_id?: string; // 外键
+  totalCount?: number; // 新增
 }
 
 export interface HotelRoomTypes {
