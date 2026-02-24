@@ -64,7 +64,7 @@ export default function HeaderAvatar() {
   // 4. 跳转设置逻辑
   const handleSettings = () => {
     if (user?.role === "admin") {
-      router.push("/admin/setting");
+      router.push("/admin/settings");
     } else if (user?.role === "merchant") {
       router.push("/hotel/management");
     }

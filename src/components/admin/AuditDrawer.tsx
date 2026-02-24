@@ -143,6 +143,22 @@ export default function AuditDrawer({
             { label: "联系电话", value: data.contactPhone },
             { label: "开业日期", value: data.openingDate },
             { label: "详细地址", value: data.address },
+            {
+              label: "酒店标签",
+              value: (
+                <Space size={[4, 4]} wrap>
+                  {Array.isArray(data.tags) && data.tags.length > 0 ? (
+                    data.tags.map((tag, idx) => (
+                      <Tag key={idx} color="arcoblue">
+                        {tag}
+                      </Tag>
+                    ))
+                  ) : (
+                    <Typography.Text type="secondary">暂无标签</Typography.Text>
+                  )}
+                </Space>
+              ),
+            },
           ]}
         />
 

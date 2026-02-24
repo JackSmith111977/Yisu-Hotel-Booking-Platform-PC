@@ -22,6 +22,7 @@ interface HotelDBRow {
   rejected_reason: string | null;
   region: string;
   album: string[] | null;
+  tags: string[] | null;
 }
 
 /**
@@ -78,6 +79,9 @@ export async function fetchHotelsList(): Promise<HotelInformation[]> {
       // Postgres 的 text[] 会被 supabase-js 自动转换为 JS 数组
       // 如果 album 为 null，则给空数组
       images: row.album || [],
+
+      // 映射标签: tags -> tags
+      tags: row.tags || [],
 
       // UI 补充字段 (数据库暂无)
       // description: "暂无详细描述",
