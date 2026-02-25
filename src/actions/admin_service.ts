@@ -3,6 +3,8 @@
 import { supabase_admin } from "@/lib/supabase_admin";
 import { AuditLogs, TrendPoint } from "@/types/AuditLogsType";
 import { HotelInformation } from "@/types/HotelInformation";
+import { verifyJWT } from "@/lib/jwt";
+import { cookies } from "next/headers";
 
 /**
  * 数据库行结构
@@ -283,16 +285,37 @@ async function recordLog(hotelId: string, hotelName: string, action: string, rea
     throw new Error("操作不能为空");
   }
 
-  // 2. 写入日志表
+  // 2. 获取当前操作者信息
+  let operatorName = "未知用户";
+  let operatorId: string | null = null;
+
+  try {
+    const cookieStore = await cookies();
+    const token = cookieStore.get("auth_token")?.value;
+    if (token) {
+      const verification = await verifyJWT(token);
+      if (verification.valid && verification.user) {
+        // 优先使用用户名，如果没有则使用 ID
+        operatorName = verification.user.username || verification.user.id;
+        operatorId = verification.user.id;
+      }
+    }
+  } catch (error) {
+    console.error("获取当前操作用户失败", error);
+    // 不中断流程，继续记录日志，但操作者为未知
+  }
+
+  // 3. 写入日志表
   const { error } = await supabase_admin.from("audit_logs").insert({
     target_id: parseInt(hotelId),
     target_name: hotelName,
     action_type: action,
     content: reason || "",
-    operator_name: "开发者测试",
+    operator_name: operatorName,
+    operator_id: operatorId,
   });
 
-  // 3. 错误处理
+  // 4. 错误处理
   if (error) {
     console.error("记录日志失败", error);
   }

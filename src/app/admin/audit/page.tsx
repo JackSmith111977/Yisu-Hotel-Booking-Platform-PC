@@ -218,7 +218,7 @@ function AuditPageContent() {
   };
 
   return (
-    <Card className="h-full">
+    <Card className="min-h-full">
       <div className="p-6">
         <Tabs
           activeTab={activeTab}

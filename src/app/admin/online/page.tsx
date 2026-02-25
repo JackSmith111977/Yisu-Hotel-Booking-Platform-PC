@@ -111,7 +111,7 @@ function OnlinePageContent() {
   return (
     <Card
       title="酒店上线管理"
-      style={{ height: "100%" }}
+      style={{ minHeight: "100%" }}
       extra={
         <Button icon={<IconRefresh />} onClick={handleRefresh} loading={loading} disabled={loading}>
           刷新数据
