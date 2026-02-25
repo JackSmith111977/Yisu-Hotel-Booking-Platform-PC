@@ -52,10 +52,13 @@ export async function sendRegisterCode(email: string, username: string): Promise
 
   // 生成最新验证码
   const code = generateVerifyCode();
-  const expiresAtLocal = new Date(Date.now() + 5 * 60 * 1000);
-  const expiresAt = new Date(
-    expiresAtLocal.getTime() - expiresAtLocal.getTimezoneOffset() * 60 * 1000
-  );
+  // 原来计算时区偏移的版本：
+  // const expiresAtLocal = new Date(Date.now() + 5 * 60 * 1000);
+  // const expiresAt = new Date(
+  //   expiresAtLocal.getTime() - expiresAtLocal.getTimezoneOffset() * 60 * 1000
+  // );
+  // 改为直接使用 UTC ISO 字符串，避免时区问题
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString();
 
   try {
     //删除该邮箱所有未使用的注册验证码
@@ -108,8 +111,12 @@ export async function verifyRegisterCode(email: string, code: string): Promise<B
   }
 
   try {
-    const nowLocal = new Date();
-    const nowUTC = new Date(nowLocal.getTime() - nowLocal.getTimezoneOffset() * 60 * 1000);
+    // 旧版时区调整：
+    // const nowLocal = new Date();
+    // const nowUTC = new Date(nowLocal.getTime() - nowLocal.getTimezoneOffset() * 60 * 1000);
+    // const now = nowUTC.toISOString();
+    // 现在直接获取当前 UTC 字符串
+    const now = new Date().toISOString();
 
     const { data, error } = await supabase_admin
       .from("verify_codes")
@@ -118,7 +125,7 @@ export async function verifyRegisterCode(email: string, code: string): Promise<B
       .eq("type", "register")
       .eq("code", code)
       .eq("used", false)
-      .gt("expires_at", nowUTC.toISOString())
+      .gt("expires_at", now)
       .order("created_at", { ascending: false })
       .limit(1);
 

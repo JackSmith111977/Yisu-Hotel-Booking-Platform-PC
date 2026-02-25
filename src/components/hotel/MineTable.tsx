@@ -119,18 +119,23 @@ const MineTable = memo(function MineTable({ onEdit, data, onDelete, statusFilter
     {
       title: '房型名称',
       dataIndex: 'name',
+      width: 150,
     },
     {
       title: '价格（元/晚）',
       dataIndex: 'price',
+      width: 120,
     },
     {
       title: '房间数量',
       dataIndex: 'quantity',
+      render: (val: number) => val ?? 5,
+      width: 100,
     },
     {
       title: '面积（㎡）',
       dataIndex: 'size',
+      width: 100,
     },
     {
       title: '描述',
@@ -146,7 +151,7 @@ const MineTable = memo(function MineTable({ onEdit, data, onDelete, statusFilter
         columns={hotelColumns} 
         data={data} 
         expandedRowRender={cur => (
-          <Table rowKey="id" columns={roomColumns} data={cur.room_types} pagination={false}/>
+          <Table rowKey="id" columns={roomColumns} data={cur.room_types} pagination={false} />
         )} 
       />
       {/* 确认删除弹窗 */}
