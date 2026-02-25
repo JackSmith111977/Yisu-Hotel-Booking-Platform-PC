@@ -95,7 +95,7 @@ export interface HotelInformation {
 
 // 商户酒店数据
 export interface MineHotelInformationType {
-  id?: number; // id, 自动自增
+  id: number; // id, 自动自增
   name_zh: string; // 酒店中文名
   name_en: string; // 酒店英文名
   region: string; // 酒店地址
@@ -111,7 +111,7 @@ export interface MineHotelInformationType {
   status: HotelStatus; // 状态
   updated_at: string; // 更新日期
   merchant_id?: string; // 商户id(暂定不需要)
-  rejected_reason?: string;
+  rejected_reason?: string | null;
   tags?: string[];
 }
 // 1. 新增床型信息接口 (建议放在文件头部或 HotelRoomTypesForAdmin 附近)
@@ -216,3 +216,4 @@ export interface HotelPolicyType {
   extra_bed_policy?: "free" | "charged" | "not_available";
   invoice_policy?: "available" | "not_available";
 }
+

@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { Tag, Input } from '@arco-design/web-react';
 import { IconPlus } from '@arco-design/web-react/icon';
+import { RefInputType } from '@arco-design/web-react/es/Input/interface'
 
 // ── 预设标签（分组） ────────────────────────────────────────────────
 const PRESET_TAG_GROUPS = [
@@ -47,7 +48,7 @@ interface RoomTagSelectorProps {
 export default function RoomTagSelector({ value = [], onChange }: RoomTagSelectorProps) {
     const [inputVisible, setInputVisible] = useState(false);
     const [inputValue, setInputValue] = useState('');
-    const inputRef = useRef<HTMLInputElement>(null);
+    const inputRef = useRef<RefInputType>(null)
 
     const selected = value ?? [];
 

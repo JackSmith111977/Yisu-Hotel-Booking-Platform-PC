@@ -3,7 +3,7 @@ import { Card, Typography, Empty, Spin, Tag, Button, Space } from '@arco-design/
 import { IconEdit, IconDelete, IconLocation, IconHome } from '@arco-design/web-react/icon';
 import dayjs from 'dayjs';
 
-interface DraftHotel {
+export interface DraftHotel {
   id: number;
   name_zh: string;
   name_en?: string | null;
