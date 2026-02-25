@@ -35,3 +35,8 @@ body {
   --background: #0a0a0a;
   --foreground: #ededed;
 }
+
+/* 开发模式下隐藏 Next.js 的开发模式提示条 */
+/* nextjs-portal {
+  display: none;  
+} */

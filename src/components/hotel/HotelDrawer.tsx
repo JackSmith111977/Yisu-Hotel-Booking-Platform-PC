@@ -41,6 +41,7 @@ const HotelDrawer = memo(function HotelDrawer({
   visible,
   data,
   onClose,
+  
 }: HotelDrawerProps) {
   if (!data) return null;
 

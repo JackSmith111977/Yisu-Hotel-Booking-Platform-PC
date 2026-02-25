@@ -7,6 +7,7 @@ import RejectedList from '@/components/hotel/RejectedList';
 import DraftList from '@/components/hotel/DraftList';
 import HotelModal from '@/components/hotel/HotelModal';
 import { useSearchParams } from "next/navigation";
+import { DraftHotel } from '@/components/hotel/DraftList';
 
 const TabPane = Tabs.TabPane;
 
@@ -102,7 +103,7 @@ export default function TodoPage() {
         >
           <div style={{ padding: '20px 0' }}>
             <DraftList 
-              data={draftData} 
+              data={draftData as DraftHotel[]}
               loading={loading}
               onEdit={handleEdit}
               onDelete={handleDeleteClick}
@@ -122,7 +123,10 @@ export default function TodoPage() {
         >
           <div style={{ padding: '20px 0' }}>
             <RejectedList 
-              data={rejectedData} 
+              data={rejectedData.map(item => ({
+                ...item,
+                rejected_reason: item.rejected_reason ?? null
+              }))}
               loading={loading}
               onEdit={handleEdit}
               onDelete={handleDeleteClick}

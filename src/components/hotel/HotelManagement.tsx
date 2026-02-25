@@ -97,8 +97,6 @@ export default function HotelManagement({ statusFilter }: Props) {
         visible={drawerVisible}
         data={curRecord}
         onClose={() => setDrawerVisible(false)}
-        onApprove={() => {}}
-        onReject={() => {}}
       />
 
       <HotelModal modalVisible={modalVisible} setModalVisible={setModalVisible} initialData={currentHotel} onCreated={() => setReloadKey(k => k + 1)} />

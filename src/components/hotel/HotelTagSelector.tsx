@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { Tag, Input, Tooltip } from '@arco-design/web-react';
 import { IconPlus, IconClose } from '@arco-design/web-react/icon';
+import { RefInputType } from '@arco-design/web-react/es/Input/interface'
 
 // ── 预设标签（分组，仅用于展示候选项） ─────────────────────────────
 const PRESET_TAG_GROUPS = [
@@ -51,7 +52,7 @@ interface HotelTagSelectorProps {
 export default function HotelTagSelector({ value = [], onChange }: HotelTagSelectorProps) {
     const [inputVisible, setInputVisible] = useState(false);
     const [inputValue, setInputValue] = useState('');
-    const inputRef = useRef<HTMLInputElement>(null);
+    const inputRef = useRef<RefInputType>(null)
 
     const selected = value ?? [];
 
