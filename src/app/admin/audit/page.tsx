@@ -13,7 +13,7 @@ import { HotelInformation, HotelRoomTypesForAdmin } from "@/types/HotelInformati
 import { Badge, Button, Card, Tabs } from "@arco-design/web-react";
 import { IconRefresh } from "@arco-design/web-react/icon";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, Suspense } from "react";
 // TODO 可能优化：批量操作支持
 // TODO 可能优化：操作历史记录
 // TODO 可能优化：创建统一的错误处理逻辑
@@ -21,9 +21,9 @@ import { useEffect, useMemo, useState } from "react";
 
 /**
  *
- * @returns 酒店审核页面
+ * @returns 酒店审核页面内容
  */
-export default function Home() {
+function AuditPageContent() {
   // 数据源
   const [data, setData] = useState<HotelInformation[]>([]);
 
@@ -218,65 +218,77 @@ export default function Home() {
   };
 
   return (
-    <Card
-      title="信息审核"
-      style={{
-        height: "100%",
-        overflow: "auto",
-        // borderRadius: 8,
-      }}
-      extra={
-        <Button icon={<IconRefresh />} onClick={handleRefresh} loading={loading} disabled={loading}>
-          刷新列表
-        </Button>
-      }
-    >
-      {/* tab 标签页 */}
-      <Tabs activeTab={activeTab} onChange={setActiveTab} type="line">
-        <Tabs.TabPane
-          key="pending"
-          title={
-            <span>
-              待处理
-              <Badge count={stats.pendingCount} style={{ marginLeft: 8 }} />
-            </span>
+    <Card className="h-full">
+      <div className="p-6">
+        <Tabs
+          activeTab={activeTab}
+          onChange={setActiveTab}
+          type="line"
+          extra={
+            <Button
+              type="secondary"
+              icon={<IconRefresh />}
+              onClick={handleRefresh}
+              loading={loading}
+            >
+              刷新
+            </Button>
           }
-        />
-        <Tabs.TabPane
-          key="processed"
-          title={
-            <span>
-              已处理
-              <Badge
-                count={stats.processedCount}
-                style={{ marginLeft: 8 }}
-                dotStyle={{ background: "#252525" }}
-              />
-            </span>
-          }
-        />
-      </Tabs>
-      {/* 酒店信息展示表格 */}
-      <AuditTable data={filteredData} onView={handleOpenDrawer} isLoading={loading} />
+        >
+          <Tabs.TabPane
+            key="pending"
+            title={
+              <>
+                <span className="px-2">待审核</span>
+                <Badge count={stats.pendingCount} maxCount={99} dotStyle={{ fontSize: 12 }} />
+              </>
+            }
+          >
+            <div className="py-5">
+              <AuditTable data={filteredData} isLoading={loading} onView={handleOpenDrawer} />
+            </div>
+          </Tabs.TabPane>
+          <Tabs.TabPane
+            key="processed"
+            title={
+              <>
+                <span className="px-2">已处理</span>
+                <Badge count={stats.processedCount} maxCount={99} dotStyle={{ fontSize: 12 }} />
+              </>
+            }
+          >
+            <div className="py-5">
+              <AuditTable data={filteredData} isLoading={loading} onView={handleOpenDrawer} />
+            </div>
+          </Tabs.TabPane>
+        </Tabs>
 
-      {/* 酒店详细审核页 */}
-      <AuditDrawer
-        visible={drawerVisible}
-        data={curRecord}
-        roomTypes={roomTypes}
-        loadingRoomTypes={roomTypesLoading}
-        onClose={() => setDrawerVisible(false)}
-        onApprove={handleApprove}
-        onReject={handleReject}
-      />
+        <AuditDrawer
+          visible={drawerVisible}
+          data={curRecord}
+          roomTypes={roomTypes}
+          loadingRoomTypes={roomTypesLoading}
+          onClose={() => setDrawerVisible(false)}
+          onApprove={handleApprove}
+          onReject={handleReject}
+          loading={submitting}
+        />
 
-      {/* 驳回确认对话框 */}
-      <RejectModal
-        visible={rejectModalVisible}
-        loading={submitting}
-        onCancel={() => setRejectModalVisible(false)}
-        onConfirm={handleRejectConfirm}
-      />
+        <RejectModal
+          visible={rejectModalVisible}
+          onCancel={() => setRejectModalVisible(false)}
+          onConfirm={handleRejectConfirm}
+          loading={submitting}
+        />
+      </div>
     </Card>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<Card>Loading...</Card>}>
+      <AuditPageContent />
+    </Suspense>
   );
 }

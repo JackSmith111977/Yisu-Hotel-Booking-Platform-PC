@@ -26,6 +26,7 @@ interface AuditDrawerProps {
   data: HotelInformation | null;
   roomTypes?: HotelRoomTypesForAdmin[];
   loadingRoomTypes?: boolean;
+  loading?: boolean;
   onClose: () => void;
   onApprove: () => void;
   onReject: () => void;
@@ -36,6 +37,7 @@ export default function AuditDrawer({
   data,
   roomTypes = [],
   loadingRoomTypes = false,
+  loading = false,
   onClose,
   onApprove,
   onReject,
@@ -48,10 +50,10 @@ export default function AuditDrawer({
   // 定义底部按钮节点
   const footerNode = (
     <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
-      <Button status="danger" onClick={onReject} icon={<IconClose />}>
+      <Button status="danger" onClick={onReject} icon={<IconClose />} loading={loading}>
         驳回申请
       </Button>
-      <Button type="primary" status="success" onClick={onApprove} icon={<IconCheck />}>
+      <Button type="primary" status="success" onClick={onApprove} icon={<IconCheck />} loading={loading}>
         通过审核
       </Button>
     </div>

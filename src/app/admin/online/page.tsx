@@ -6,10 +6,10 @@ import { useMessageStore } from "@/store/useMessageStore";
 import { HotelInformation } from "@/types/HotelInformation";
 import { Button, Card, Input, Tabs } from "@arco-design/web-react";
 import { IconRefresh, IconSearch } from "@arco-design/web-react/icon";
-import { useParams, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useMemo, useState } from "react";
 
-export default function Home() {
+function OnlinePageContent() {
   // 酒店数据
   const [data, setData] = useState<HotelInformation[]>([]);
   // 当前标签页
@@ -136,5 +136,13 @@ export default function Home() {
 
       <OnlineTable isLoading={loading} data={filteredData} onToggleStatus={handleToggleStatus} />
     </Card>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<Card>Loading...</Card>}>
+      <OnlinePageContent />
+    </Suspense>
   );
 }
