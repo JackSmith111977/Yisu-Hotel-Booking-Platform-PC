@@ -5,6 +5,7 @@ import { AuditLogs, TrendPoint } from "@/types/AuditLogsType";
 import { HotelInformation } from "@/types/HotelInformation";
 import { verifyJWT } from "@/lib/jwt";
 import { cookies } from "next/headers";
+import { unstable_cache, revalidatePath, revalidateTag } from "next/cache";
 
 /**
  * 数据库行结构
@@ -28,69 +29,73 @@ interface HotelDBRow {
 }
 
 /**
- * 获取所有酒店信息
+ * 获取所有酒店信息 (已启用缓存策略: 300s)
  * @returns {Promise<HotelInformation[]>} - 所有酒店信息
  */
-export async function fetchHotelsList(): Promise<HotelInformation[]> {
-  // 获取所有酒店信息，并捕获错误
-  const { data, error } = await supabase_admin
-    .from("hotels")
-    .select("*")
-    .order("updated_at", { ascending: false });
+export const fetchHotelsList = unstable_cache(
+  async (): Promise<HotelInformation[]> => {
+    // 获取所有酒店信息，并捕获错误
+    const { data, error } = await supabase_admin
+      .from("hotels")
+      .select("*")
+      .order("updated_at", { ascending: false });
 
-  // 错误处理
-  if (error) {
-    console.error(error);
-    throw new Error(error.message);
-  }
-
-  // 数据解析
-  return (data as HotelDBRow[]).map((row) => {
-    // 合并完整地址
-    let fullAddress = row.address;
-    try {
-      // 解析 region 地区
-      const region = JSON.parse(row.region);
-      if (Array.isArray(region)) {
-        // 合并地区和地址
-        fullAddress = region.join("") + row.address;
-      }
-    } catch (error) {
-      console.warn(`failed to parse region for hotel: ${row.id}`, error);
+    // 错误处理
+    if (error) {
+      console.error(error);
+      throw new Error(error.message);
     }
 
-    // 3. 映射字段
-    return {
-      id: row.id.toString(), // bigint 转 string
-      nameZh: row.name_zh,
-      nameEn: row.name_en,
-      merchantId: row.merchant_id,
-      updatedAt: row.updated_at, // 数据库自带 ISO 时间格式
-      contactPhone: row.contact_phone || "暂无",
-      starRating: row.star_rating || 0,
-      openingDate: row.opening_date || "",
-      rejectedReason: row.rejected_reason || undefined,
+    // 数据解析
+    return (data as HotelDBRow[]).map((row) => {
+      // 合并完整地址
+      let fullAddress = row.address;
+      try {
+        // 解析 region 地区
+        const region = JSON.parse(row.region);
+        if (Array.isArray(region)) {
+          // 合并地区和地址
+          fullAddress = region.join("") + row.address;
+        }
+      } catch (error) {
+        console.warn(`failed to parse region for hotel: ${row.id}`, error);
+      }
 
-      // 映射封面图: image -> coverImage
-      coverImage: row.image || "",
+      // 3. 映射字段
+      return {
+        id: row.id.toString(), // bigint 转 string
+        nameZh: row.name_zh,
+        nameEn: row.name_en,
+        merchantId: row.merchant_id,
+        updatedAt: row.updated_at, // 数据库自带 ISO 时间格式
+        contactPhone: row.contact_phone || "暂无",
+        starRating: row.star_rating || 0,
+        openingDate: row.opening_date || "",
+        rejectedReason: row.rejected_reason || undefined,
 
-      status: row.status as HotelInformation["status"],
-      address: fullAddress, // 使用拼接后的地址
+        // 映射封面图: image -> coverImage
+        coverImage: row.image || "",
 
-      // 映射图集: album -> images
-      // Postgres 的 text[] 会被 supabase-js 自动转换为 JS 数组
-      // 如果 album 为 null，则给空数组
-      images: row.album || [],
+        status: row.status as HotelInformation["status"],
+        address: fullAddress, // 使用拼接后的地址
 
-      // 映射标签: tags -> tags
-      tags: row.tags || [],
+        // 映射图集: album -> images
+        // Postgres 的 text[] 会被 supabase-js 自动转换为 JS 数组
+        // 如果 album 为 null，则给空数组
+        images: row.album || [],
 
-      // UI 补充字段 (数据库暂无)
-      // description: "暂无详细描述",
-      // amenities: [],
-    };
-  });
-}
+        // 映射标签: tags -> tags
+        tags: row.tags || [],
+
+        // UI 补充字段 (数据库暂无)
+        // description: "暂无详细描述",
+        // amenities: [],
+      };
+    });
+  },
+  ["hotels-list"],
+  { revalidate: 300, tags: ["hotels-list"] }
+);
 
 /**
  * 审核通过酒店
@@ -127,8 +132,15 @@ export async function approveHotel(
     throw new Error(`审核通过失败: ${error.message}`);
   }
 
-  // 4. 记录日志
+  // 4. 记录日志 (确保日志已入库再清理缓存)
   await recordLog(hotelId, hotelName || "", action);
+
+  // 5. 清理缓存，确保前端实时同步 (包括酒店列表和操作日志)
+  revalidateTag("hotels-list", "max");
+  revalidateTag("audit-logs", "max");
+  revalidatePath("/admin/audit");
+  revalidatePath("/admin/online");
+  revalidatePath("/admin/logs");
 }
 
 /**
@@ -176,8 +188,15 @@ export async function rejectHotel(
     throw new Error(`驳回酒店失败: ${error.message}`);
   }
 
-  // 4. 记录日志
+  // 4. 记录日志 (确保日志已入库再清理缓存)
   await recordLog(hotelId, hotelName || "", "reject", reason);
+
+  // 5. 清理缓存，确保前端实时同步 (包括酒店列表和操作日志)
+  revalidateTag("hotels-list", "max");
+  revalidateTag("audit-logs", "max");
+  revalidatePath("/admin/audit");
+  revalidatePath("/admin/online");
+  revalidatePath("/admin/logs");
 }
 
 /**
@@ -216,8 +235,15 @@ export async function offlineHotel(hotelId: string, hotelName: string): Promise<
     throw new Error(`下线酒店失败: ${error.message}`);
   }
 
-  // 5. 记录日志
+  // 5. 记录日志 (确保日志已入库再清理缓存)
   await recordLog(hotelId, hotelName || "", "offline");
+
+  // 6. 清理缓存，确保前端实时同步 (包括酒店列表和操作日志)
+  revalidateTag("hotels-list", "max");
+  revalidateTag("audit-logs", "max");
+  revalidatePath("/admin/audit");
+  revalidatePath("/admin/online");
+  revalidatePath("/admin/logs");
 }
 
 /**
@@ -322,32 +348,36 @@ async function recordLog(hotelId: string, hotelName: string, action: string, rea
 }
 
 /**
- * 获取审计日志
+ * 获取审计日志 (已启用缓存策略: 300s)
  * @returns {Promise<AuditLogs[]>} - 审计日志列表
  */
-export async function fetchAuditLogs(): Promise<AuditLogs[]> {
-  // 1. 查询审计日志表
-  const { data, error } = await supabase_admin
-    .from("audit_logs")
-    .select("*")
-    .order("created_at", { ascending: false });
+export const fetchAuditLogs = unstable_cache(
+  async (): Promise<AuditLogs[]> => {
+    // 1. 查询审计日志表
+    const { data, error } = await supabase_admin
+      .from("audit_logs")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-  // 2. 错误处理
-  if (error) {
-    console.error("查询审计日志失败", error);
-    throw new Error(`查询审计日志失败: ${error.message}`);
-  }
+    // 2. 错误处理
+    if (error) {
+      console.error("查询审计日志失败", error);
+      throw new Error(`查询审计日志失败: ${error.message}`);
+    }
 
-  // 3. 返回结果
-  return (data as AuditLogs[]).map((row) => ({
-    id: row.id.toString(),
-    operator_name: row.operator_name,
-    action_type: row.action_type,
-    target_name: row.target_name,
-    created_at: row.created_at,
-    content: row.content,
-  }));
-}
+    // 3. 返回结果
+    return (data as AuditLogs[]).map((row) => ({
+      id: row.id.toString(),
+      operator_name: row.operator_name,
+      action_type: row.action_type,
+      target_name: row.target_name,
+      created_at: row.created_at,
+      content: row.content,
+    }));
+  },
+  ["audit-logs"],
+  { revalidate: 300, tags: ["audit-logs"] }
+);
 
 /**
  * 获取操作趋势数据
