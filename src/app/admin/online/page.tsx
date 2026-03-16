@@ -20,6 +20,7 @@ export default function OnlinePage() {
      * 渲染边界处理：
      * 由于 OnlineView 内部使用了 useSearchParams，在静态渲染时需要使用 Suspense 包裹。
      */
+    // todo: 写一个真正的骨架屏组件
     <Suspense fallback={<div className="p-6">加载中...</div>}>
       <OnlineView />
     </Suspense>

@@ -21,6 +21,8 @@ import { useEffect, useMemo, useState } from "react";
 // TODO 可能优化：创建统一的错误处理逻辑
 // TODO 可能优化：添加快捷键支持
 
+// TODO 使用动态路由，支持查看酒店详细页
+
 /**
  * AuditView 组件 - 酒店审核页面的客户端逻辑视图
  * 负责处理酒店列表的获取、审核通过、审核驳回等交互

@@ -14,5 +14,6 @@ export const metadata: Metadata = {
  * 作为操作日志页面的入口，渲染 LogsView 客户端视图
  */
 export default function LogsPage() {
+  // todo: 添加 suspend + 骨架屏优化
   return <LogsView />;
 }

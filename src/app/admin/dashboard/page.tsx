@@ -15,5 +15,6 @@ export const metadata: Metadata = {
  * 作为仪表盘页面的入口，渲染 DashboardView 客户端视图
  */
 export default function DashboardPage() {
+  // todo: 添加 suspend + 骨架屏优化
   return <DashboardView />;
 }

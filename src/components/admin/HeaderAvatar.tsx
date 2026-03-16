@@ -24,7 +24,7 @@ export default function HeaderAvatar() {
     }
   }, [user, fetchUser]);
 
-  console.log("HeaderAvatar user:", user);
+  // console.log("HeaderAvatar user:", user);
 
   // 1. 角色文案逻辑
   const getRoleLabel = (role?: string) => {

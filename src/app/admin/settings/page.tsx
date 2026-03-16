@@ -14,5 +14,6 @@ export const metadata: Metadata = {
  * 作为系统设置页面的入口，渲染 SettingsView 客户端视图
  */
 export default function SettingsPage() {
+  // todo: 添加 suspend + 骨架屏优化
   return <SettingsView />;
 }

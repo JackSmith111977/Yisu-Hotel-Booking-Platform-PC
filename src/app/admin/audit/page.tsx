@@ -24,6 +24,7 @@ export default function AuditPage() {
      * 由于 AuditView 中使用了 useSearchParams()，在 Next.js 的静态渲染中，
      * 需要用 Suspense 包裹，以确保客户端水合（Hydration）时的正确性。
      */
+    // todo: 写一个真正的骨架屏组件
     <Suspense fallback={<div className="p-6">加载中...</div>}>
       <AuditView />
     </Suspense>
