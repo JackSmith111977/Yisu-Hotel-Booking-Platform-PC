@@ -9,10 +9,11 @@ import HotelModal from '@/components/hotel/HotelModal';
 import { useSearchParams } from "next/navigation";
 import { DraftHotel } from '@/components/hotel/DraftList';
 import { useHotels, mutateHotels } from '@/hooks/useHotels';
+import { Suspense } from 'react';
 
 const TabPane = Tabs.TabPane;
 
-export default function TodoPage() {
+function TodoPageContent() {
   const { hotels: allData, isLoading } = useHotels();
   const [modalVisible, setModalVisible] = useState(false);
   const [editingHotel, setEditingHotel] = useState<MineHotelInformationType | null>(null);
@@ -173,5 +174,13 @@ export default function TodoPage() {
       </Modal>
     </div>
     </Card>
+  );
+}
+
+export default function TodoPage() {
+  return (
+    <Suspense fallback={<Card>Loading...</Card>}>
+      <TodoPageContent />
+    </Suspense>
   );
 }
