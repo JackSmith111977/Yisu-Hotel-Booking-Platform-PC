@@ -63,6 +63,7 @@ const OPTIONS = transformData(pcaData)
 const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: HotelModalProps) => {
     const [confirmLoading, setConfirmLoading] = useState(false);
     const [confirmVisible, setConfirmVisible] = useState(false);    // 确认弹窗状态
+    const [submitStep, setSubmitStep] = useState('');
     const [form] = Form.useForm();
 
     const onOkay = async (okStatus: 'draft' | 'submit') => {
@@ -83,23 +84,27 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
             };
     
             if (initialData) {
-                // 编辑模式    
+                // 编辑模式
                 const editImgInputs: UploadedImage[] = values.hotelImages ?? [];
                 const editImgDataUrls = editImgInputs.map(img => img.remoteUrl ?? img.dataUrl);
+                setSubmitStep('正在清理旧图片...');
                 await deleteStorageFolder(`hotel_${initialData.id}`);
+                setSubmitStep('正在上传酒店图片...');
                 const uploadedHotelUrls = await uploadHotelImages(
                     editImgDataUrls,
                     `hotel_${initialData.id}`,
                 );
-    
+
+                setSubmitStep('正在更新酒店信息...');
                 const hotel = await updateHotel(initialData.id as number, {
                     ...hotelData,
                     image: uploadedHotelUrls[0] ?? null,
                     album: uploadedHotelUrls.slice(1),
                 });
-    
+
                 if (hotel) {
                     if (values.roomTypes?.length > 0) {
+                        setSubmitStep('正在上传房型图片...');
                         const roomTypesData = await Promise.all(
                             values.roomTypes.map(async (room: HotelRoomTypes & { images?: UploadedImage[] }, index: number) => {
                                 const roomImgDataUrls = (room.images ?? []).map(img => {
@@ -122,12 +127,13 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                                 };
                             })
                         );
+                        setSubmitStep('正在更新房型...');
                         console.log('替换房型数据:', roomTypesData);
                         await replaceRoomTypes(initialData.id as number, roomTypesData);
                     } else {
                         await replaceRoomTypes(initialData.id as number, []);
                     }
-    
+
                     toast.success(okStatus === 'draft' ? '草稿已保存' : '更新成功');
                     setModalVisible(false);
                     if (onCreated) onCreated();
@@ -135,14 +141,16 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                 } else {
                     toast.error('更新失败');
                 }
-    
+
             } else {
-                // 创建模式    
+                // 创建模式
+                setSubmitStep('正在创建酒店...');
                 const hotel = await createHotels(hotelData as MineHotelInformationType);
-    
+
                 if (hotel) {
                     const hotelImgInputs: UploadedImage[] = values.hotelImages ?? [];
                     const hotelImgDataUrls = hotelImgInputs.map(img => img.remoteUrl ?? img.dataUrl);
+                    setSubmitStep('正在上传酒店图片...');
                     const uploadedHotelUrls = await uploadHotelImages(
                         hotelImgDataUrls,
                         `hotel_${hotel.id}`,
@@ -151,8 +159,9 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                         image: uploadedHotelUrls[0] ?? null,
                         album: uploadedHotelUrls.slice(1),
                     });
-    
+
                     if (values.roomTypes?.length > 0) {
+                        setSubmitStep('正在上传房型图片...');
                         const roomTypesData = await Promise.all(
                             values.roomTypes.map(async (room: HotelRoomTypes & { images?: UploadedImage[] }, index: number) => {
                                 const roomImgDataUrls = (room.images ?? []).map(img => {
@@ -176,10 +185,11 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                                 };
                             })
                         );
+                        setSubmitStep('正在创建房型...');
                         console.log('提交房型数据:', roomTypesData);
                         await createRoomTypes(roomTypesData);
                     }
-    
+
                     toast.success(okStatus === 'draft' ? '草稿已保存' : '提交成功');
                     setModalVisible(false);
                     if (onCreated) onCreated();
@@ -194,6 +204,7 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
             toast.error(`操作失败：${message}`);
         } finally {
             setConfirmLoading(false);
+            setSubmitStep('');
         }
     };
 
@@ -252,12 +263,15 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                 onCancel={() => handleCancel()}
                 getPopupContainer={() => document.body} // 指向离它最近的固定容器
                 footer={
-                    <>
-                      <Button onClick={() => handleCancel()}>取消</Button>
-                      <Button onClick={() => onOkay('draft')}>保存草稿</Button>
-                      <Button type="primary" status="success" onClick={() => onOkay('submit')}>提交</Button>
-                    </>
-                  }
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                        <span style={{ color: 'var(--color-text-3)', fontSize: 13 }}>{submitStep}</span>
+                        <div>
+                            <Button onClick={() => handleCancel()} style={{ marginRight: 8 }}>取消</Button>
+                            <Button onClick={() => onOkay('draft')} style={{ marginRight: 8 }}>保存草稿</Button>
+                            <Button type="primary" status="success" onClick={() => onOkay('submit')}>提交</Button>
+                        </div>
+                    </div>
+                }
             >
                 <Form
                     {...formItemLayout}
