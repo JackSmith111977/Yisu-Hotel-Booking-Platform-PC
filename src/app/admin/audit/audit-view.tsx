@@ -13,7 +13,7 @@ import { useMessageStore } from "@/store/useMessageStore";
 import { HotelInformation, HotelRoomTypesForAdmin } from "@/types/HotelInformation";
 import { Badge, Button, Card, Tabs } from "@arco-design/web-react";
 import { IconRefresh } from "@arco-design/web-react/icon";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 // TODO 可能优化：批量操作支持
@@ -60,6 +60,23 @@ export default function AuditView() {
 
   // 获取 URL 参数：Next.js 客户端 Hook
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  /**
+   * 处理标签页切换
+   * 1. 调用 setActiveTab 立即更新本地状态，保证 UI 切换无延迟
+   * 2. 使用 URLSearchParams 获取当前的查询参数，设置 tab 参数为传入的 key
+   * 3. 使用 router.replace 更新 URL 参数，实现双向绑定且不增加历史记录
+   */
+  const handleTabChange = (key: string) => {
+    setActiveTab(key);
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", key);
+
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
 
   /**
    * 监听 URL 中的 tab 参数
@@ -78,7 +95,9 @@ export default function AuditView() {
    */
   const stats = useMemo(() => {
     const pendingCount = data.filter((item) => item.status === "pending").length;
-    const processedCount = data.filter((item) => item.status !== "pending").length;
+    const processedCount = data.filter(
+      (item) => item.status !== "pending" && item.status !== "draft"
+    ).length;
     return { pendingCount, processedCount };
   }, [data]);
 
@@ -218,7 +237,7 @@ export default function AuditView() {
       <div className="p-6">
         <Tabs
           activeTab={activeTab}
-          onChange={setActiveTab}
+          onChange={handleTabChange}
           type="line"
           extra={
             <Button
