@@ -29,7 +29,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <Layout.Content
           className="bg-gray-100 transition-colors duration-200 dark:bg-gray-900"
           style={{
-            overflow: "hidden",
+            overflow: "auto",
           }}
         >
           {children}

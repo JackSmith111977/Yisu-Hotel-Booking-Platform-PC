@@ -82,6 +82,11 @@ export interface HotelInformation {
    */
   images?: string[];
   /**
+   * @description: 酒店标签
+   * @type {string[]}
+   */
+  tags?: string[];
+  /**
    * @description: 关联的房型列表
    * @type {HotelRoomTypes[]}
    */
@@ -205,10 +210,10 @@ export type AddressDataType = {
 };
 
 export interface HotelPolicyType {
-  check_in_time?: string;        // "14:00"
-  check_out_time?: string;       // "12:00"
-  pet_policy?: 'allowed' | 'not_allowed';
-  extra_bed_policy?: 'free' | 'charged' | 'not_available';
-  invoice_policy?: 'available' | 'not_available';
+  check_in_time?: string; // "14:00"
+  check_out_time?: string; // "12:00"
+  pet_policy?: "allowed" | "not_allowed";
+  extra_bed_policy?: "free" | "charged" | "not_available";
+  invoice_policy?: "available" | "not_available";
 }
 

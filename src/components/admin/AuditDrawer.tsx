@@ -26,6 +26,7 @@ interface AuditDrawerProps {
   data: HotelInformation | null;
   roomTypes?: HotelRoomTypesForAdmin[];
   loadingRoomTypes?: boolean;
+  loading?: boolean;
   onClose: () => void;
   onApprove: () => void;
   onReject: () => void;
@@ -36,6 +37,7 @@ export default function AuditDrawer({
   data,
   roomTypes = [],
   loadingRoomTypes = false,
+  loading = false,
   onClose,
   onApprove,
   onReject,
@@ -48,10 +50,10 @@ export default function AuditDrawer({
   // 定义底部按钮节点
   const footerNode = (
     <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
-      <Button status="danger" onClick={onReject} icon={<IconClose />}>
+      <Button status="danger" onClick={onReject} icon={<IconClose />} loading={loading}>
         驳回申请
       </Button>
-      <Button type="primary" status="success" onClick={onApprove} icon={<IconCheck />}>
+      <Button type="primary" status="success" onClick={onApprove} icon={<IconCheck />} loading={loading}>
         通过审核
       </Button>
     </div>
@@ -143,6 +145,22 @@ export default function AuditDrawer({
             { label: "联系电话", value: data.contactPhone },
             { label: "开业日期", value: data.openingDate },
             { label: "详细地址", value: data.address },
+            {
+              label: "酒店标签",
+              value: (
+                <Space size={[4, 4]} wrap>
+                  {Array.isArray(data.tags) && data.tags.length > 0 ? (
+                    data.tags.map((tag, idx) => (
+                      <Tag key={idx} color="arcoblue">
+                        {tag}
+                      </Tag>
+                    ))
+                  ) : (
+                    <Typography.Text type="secondary">暂无标签</Typography.Text>
+                  )}
+                </Space>
+              ),
+            },
           ]}
         />
 

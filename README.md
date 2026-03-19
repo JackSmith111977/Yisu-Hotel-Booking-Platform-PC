@@ -1,170 +1,363 @@
 # 酒店预订平台 (Hotel Booking Platform)
 
-这是一个基于 Next.js 16 的酒店预订管理平台，包含管理员后台和商户前台功能。
+这是一个基于 Next.js 16 的现代化酒店预订管理平台，集成了管理员后台审核与商户前台管理功能。项目采用最新的前端技术栈，注重性能、用户体验与代码可维护性。
 
-## 技术栈
+## 🛠 技术栈
 
-- **前端框架**: Next.js 16 (App Router)
-- **UI组件库**: Arco Design (字节跳动的企业级UI库)
-- **状态管理**: Zustand (轻量级状态管理)
-- **数据获取**: SWR (React Hooks for data fetching)
-- **数据库**: Supabase (PostgreSQL后端即服务)
-- **样式**: Tailwind CSS v4
-- **开发工具**: TypeScript, ESLint, Prettier
+### 前端核心
+- **框架**: [Next.js 16](https://nextjs.org/) (App Router) - 也就是 React 19
+- **语言**: [TypeScript](https://www.typescriptlang.org/) - 强类型支持
+- **UI 组件库**: [Arco Design](https://arco.design/react/docs/start) - 字节跳动企业级 UI 设计体系
+- **样式方案**: [Tailwind CSS v4](https://tailwindcss.com/) - 原子化 CSS 框架
+- **状态管理**: [Zustand](https://github.com/pmndrs/zustand) - 轻量级、高性能的状态管理
+- **数据获取**: [SWR](https://swr.vercel.app/) - 用于数据请求的 React Hooks
+- **图表库**: [Recharts](https://recharts.org/) & [ECharts](https://echarts.apache.org/) - 数据可视化
 
-## 快速开始
+### 后端与服务
+- **BaaS**: [Supabase](https://supabase.com/) - 开源 Firebase 替代品 (PostgreSQL)
+- **认证**: Supabase Auth
+- **存储**: Supabase Storage
 
-首先，运行开发服务器：
+### 工具链
+- **包管理**: npm 
+- **代码规范**: ESLint, Prettier
+- **Git Hooks**: (建议配置 husky + lint-staged)
+
+## ✨ 功能特性
+
+### 👨‍💼 管理员端 (Admin Portal)
+位于 `/admin` 路径下，主要用于平台运营管理。
+- **仪表盘 (Dashboard)**: 查看平台整体数据概览。
+- **审核管理 (Audit)**:
+  - 酒店入驻审核 (通过/驳回)。
+  - 查看待审核、已通过、已驳回的酒店列表。
+- **上线管理 (Online)**: 管理已上线酒店的状态。
+- **日志系统 (Logs)**: 查看系统操作日志。
+- **系统设置 (Settings)**: 平台基础设置。
+
+### 🏨 商户端 (Merchant Portal)
+位于 `/hotel` 路径下，供酒店商家管理自己的业务。
+- **概览 (Dashboard)**: 查看酒店经营数据。
+- **酒店管理 (Management)**:
+  - 创建和编辑酒店信息。
+  - 管理房型与库存。
+  - 查看酒店状态 (审核中、已发布、被驳回)。
+- **草稿箱 (Draft)**: 保存未提交的酒店信息草稿。
+- **待办事项 (Todo)**: 商户待处理任务。
+- **设置 (Settings)**: 商户个人及账户设置。
+
+### 🔐 认证系统
+- **登录 (Login)**: `/login` - 统一登录入口。
+- **注册 (Register)**: `/register` - 商户注册入口。
+
+## 💡 技术亮点与挑战
+
+### 🌟 技术亮点
+- **Server Actions 深度集成**: 摒弃传统 API 路由，利用 Next.js Server Actions 直接在服务端执行数据库操作，实现了类型安全的前后端逻辑无缝衔接。
+- **高性能交互体验**: 
+  - 实现了基于 CSS 变量的 **高性能视差滚动 (Parallax)** 组件，利用 `requestAnimationFrame` 优化渲染性能。
+  - 采用 **Tailwind CSS v4** 引擎，构建时即时生成样式，兼顾开发体验与产物提及。
+- **严格的权限控制 (RBAC)**: 基于 Middleware 和 Supabase Auth 实现了细粒度的路由保护，严格区分 Admin 和 Merchant 的访问权限。
+- **全链路类型安全**: 从数据库 Schema 到前端组件 Props，全面使用 TypeScript 接口定义（如 `HotelInformation`），最大程度减少运行时错误。
+
+### 🧩 开发难点
+- **复杂表单状态管理**: 酒店信息表单涉及多层级数据（基本信息、多图片上传裁剪、动态房型管理、标签选择），状态逻辑复杂，且需处理草稿/发布双状态切换。
+- **图片处理工作流**: 实现了前端裁剪 (`react-easy-crop`) -> 压缩 -> 上传 Supabase Storage -> 获取持久化 URL -> 写入数据库的完整链路，需处理各种异常情况。
+- **双端数据隔离与同步**: 在同一套代码库中同时处理管理员（全局视角）和商户（私有视角）的数据逻辑，利用 Supabase RLS (Row Level Security) 确保数据安全隔离。
+- **审核工作流状态机**: 实现了 `Draft` -> `Pending` -> `Approved`/`Rejected` -> `Online`/`Offline` 的完整状态流转，并在 UI 上给予用户清晰的反馈。
+
+## 📂 项目结构
+
+```bash
+src/
+├── actions/          # Server Actions (服务端业务逻辑)
+│   ├── admin_service.ts # 管理员相关操作
+│   ├── auth.ts          # 认证相关操作
+│   ├── hotels.ts        # 酒店相关操作
+│   └── ...
+├── app/              # Next.js App Router 页面路由
+│   ├── admin/        # 管理员路由组
+│   ├── hotel/        # 商户路由组
+│   ├── login/        # 登录页
+│   └── register/     # 注册页
+├── components/       # React 组件
+│   ├── admin/        # 管理员专用组件 (表格、抽屉等)
+│   ├── auth/         # 认证表单组件
+│   ├── hotel/        # 商户专用组件 (管理面板、上传器等)
+│   ├── global/       # 全局共享组件 (消息提示、主题配置等)
+│   └── home/         # 首页/落地页组件
+├── lib/              # 工具库与配置
+│   ├── supabase.ts   # Supabase 客户端配置
+│   ├── utils.ts      # 通用工具函数
+│   └── ...
+├── store/            # Zustand 状态存储
+│   ├── useUserStore.ts    # 用户信息状态
+│   ├── useThemeStore.ts   # 主题设置状态
+│   └── ...
+├── types/            # TypeScript 类型定义
+└── mocks/            # 模拟数据 (开发阶段使用)
+```
+
+## 🚀 快速开始
+
+### 1. 环境准备
+确保本地已安装 Node.js (推荐 v18+)。
+
+### 2. 安装依赖
+
+```bash
+npm install
+# 或
+pnpm install
+# 或
+yarn install
+```
+
+### 3. 配置环境变量
+在项目根目录创建 `.env.local` 文件，并填入 Supabase 相关配置：
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+### 4. 启动开发服务器
 
 ```bash
 npm run dev
-# 或者
-yarn dev
-# 或者
-pnpm dev
-# 或者
-bun dev
 ```
 
-在浏览器中打开 [http://localhost:3000](http://localhost:3000) 查看结果。
+访问 [http://localhost:3000](http://localhost:3000) 查看应用。
 
-## 项目结构
+## 📜 数据库 Schema
 
-```
-src/
-├── actions/          # 服务端操作 (Server Actions)
-├── app/             # Next.js App Router页面
-│   ├── admin/       # 管理员后台
-│   │   ├── audit/   # 审核管理
-│   │   └── online/  # 上线管理
-│   ├── hotel/       # 商户酒店管理
-│   ├── login/       # 登录页面
-│   └── register/    # 注册页面
-├── components/      # React组件
-│   ├── admin/       # 管理员组件
-│   ├── auth/        # 认证组件
-│   ├── hotel/       # 酒店相关组件
-│   └── global/      # 全局组件
-├── lib/            # 工具库和配置
-├── mocks/          # 模拟数据
-├── store/          # Zustand状态存储
-└── types/          # TypeScript类型定义
-```
-
-## 数据库结构
-
-### Supabase 配置
-
-项目使用 Supabase 作为后端数据库服务。Supabase 配置位于 `src/lib/supabase.ts` 和 `src/lib/supabase_admin.ts`。
-
-### Hotels 表结构
+### 1. Hotels 表 (酒店信息)
 
 ```sql
-CREATE TABLE public.hotels (
-  -- 主键和标识
-  id BIGINT GENERATED BY DEFAULT AS IDENTITY NOT NULL,
-  
-  -- 酒店基本信息
-  name_zh TEXT NULL,                    -- 酒店中文名称
-  name_en TEXT NULL,                    -- 酒店英文名称
-  address TEXT NULL DEFAULT ''::text,   -- 酒店地址
-  star_rating SMALLINT NULL,            -- 酒店星级 (1-5)
-  opening_date DATE NULL,               -- 开业日期
-  contact_phone TEXT NULL,              -- 联系电话
-  
-  -- 图片信息
-  image TEXT NULL,                      -- 封面图片URL
-  album TEXT[] NULL,                    -- 相册图片URL数组
-  
-  -- 状态和管理信息
-  status TEXT NOT NULL,                 -- 审核状态: pending, approved, rejected, offline
-  merchant_id TEXT NULL,                -- 商户ID
-  updated_at TIMESTAMP WITH TIME ZONE NULL DEFAULT NOW(), -- 更新时间
-  rejected_reason TEXT NULL,            -- 拒绝理由
-  
-  -- 地区信息
-  region TEXT NULL,                     -- 地区信息 (JSON格式)
-  
-  -- 约束
-  CONSTRAINT hotels_pkey PRIMARY KEY (id),
-  CONSTRAINT hotels_name_en_key UNIQUE (name_en),
-  CONSTRAINT hotels_name_zh_key UNIQUE (name_zh)
-) TABLESPACE pg_default;
-```
+create table public.hotels ( 
+   id bigint generated by default as identity not null, 
+   name_zh text null, 
+   name_en text null, 
+   address text null default ''::text, 
+   star_rating smallint null, 
+   opening_date date null, 
+   contact_phone text null, 
+   image text null, 
+   status text not null, -- 'draft', 'pending', 'approved', 'rejected', 'offline'
+   merchant_id uuid null, -- 对应 Supabase Auth User ID
+   updated_at timestamp with time zone null default now(), 
+   rejected_reason text null, 
+   region text null, -- 存储省市区 JSON
+   album text[] null, 
+   tags text[] null, 
+   search_text tsvector null, 
+   constraint hotels_pkey primary key (id), 
+   constraint hotels_name_zh_key unique (name_zh) 
+ ) TABLESPACE pg_default; 
+ 
+ -- 索引与触发器
+ create index IF not exists hotels_search_text_idx on public.hotels using gin (search_text); 
+ create index IF not exists hotels_tags_idx on public.hotels using gin (tags); 
+ create index IF not exists hotels_name_zh_trgm_idx on public.hotels using gin (name_zh gin_trgm_ops); 
+ create index IF not exists hotels_name_en_trgm_idx on public.hotels using gin (name_en gin_trgm_ops); 
+ create index IF not exists hotels_address_trgm_idx on public.hotels using gin (address gin_trgm_ops); 
+ create index IF not exists hotels_region_idx on public.hotels using btree (region); 
+ 
+ create trigger hotels_search_vector_update BEFORE INSERT or update OF name_zh, name_en, region, address, tags, updated_at on hotels 
+  for EACH row execute FUNCTION hotels_search_vector_update (); 
+ ```
+ 
+ #### 字段映射说明 (Hotels)
+ 
+ | 数据库字段 | TS 属性 (HotelInformation) | TS 属性 (MineHotelInformationType) | 类型 | 说明 |
+ | :--- | :--- | :--- | :--- | :--- |
+ | `id` | `id` | `id` | `bigint` -> `string/number` | 酒店唯一标识 |
+ | `name_zh` | `nameZh` | `name_zh` | `text` -> `string` | 中文名称 |
+ | `name_en` | `nameEn` | `name_en` | `text` -> `string` | 英文名称 |
+ | `address` | `address` | `address` | `text` -> `string` | 详细地址 |
+ | `star_rating` | `starRating` | `star_rating` | `smallint` -> `number` | 星级 (1-5) |
+ | `opening_date` | `openingDate` | `opening_date` | `date` -> `string` | 开业日期 |
+ | `contact_phone` | `contactPhone` | `contact_phone` | `text` -> `string` | 联系电话 |
+ | `image` | `coverImage` | `image` | `text` -> `string` | 封面图 URL |
+ | `status` | `status` | `status` | `text` -> `enum` | 状态: draft/pending/approved/rejected/offline |
+ | `merchant_id` | `merchantId` | `merchant_id` | `uuid` -> `string` | 关联商户 ID |
+ | `updated_at` | `updatedAt` | `updated_at` | `timestamp` -> `string` | 最后更新时间 |
+ | `rejected_reason`| `rejectedReason` | `rejected_reason` | `text` -> `string` | 审核拒绝原因 |
+ | `region` | - | `region` | `text` -> `string` | 省市区 JSON 字符串 |
+ | `album` | `images` | `album` | `text[]` -> `string[]` | 酒店相册 |
+ | `tags` | `tags` | `tags` | `text[]` -> `string[]` | 酒店标签 |
+ 
+ ### 2. Room Types 表 (房型信息)
 
-### 字段映射说明
+```sql
+create table public.room_types ( 
+   id bigint generated by default as identity not null, 
+   hotel_id bigint not null, 
+   name text null, 
+   price numeric null, 
+   size integer null, 
+   description text null, 
+   max_guests bigint null, 
+   beds jsonb null, 
+   images jsonb null, 
+   facilities jsonb null, 
+   constraint room_types_pkey primary key (id), 
+   constraint room_types_hotel_id_fkey foreign KEY (hotel_id) references hotels (id) on update CASCADE on delete CASCADE 
+ ) TABLESPACE pg_default; 
+ 
+ -- 触发器
+ create trigger room_types_search_vector_update after INSERT or DELETE or update on room_types 
+ for EACH row execute FUNCTION room_types_search_vector_trigger (); 
+ 
+ create trigger trg_auto_room_availability after INSERT on room_types 
+  for EACH row execute FUNCTION auto_create_room_availability (); 
+ ```
+ 
+ #### 字段映射说明 (Room Types)
+ 
+ | 数据库字段 | TS 属性 (HotelRoomTypes) | 类型 | 说明 |
+ | :--- | :--- | :--- | :--- |
+ | `id` | `id` | `bigint` -> `string` | 房型唯一标识 |
+ | `hotel_id` | `hotel_id` | `bigint` -> `string` | 关联酒店 ID |
+ | `name` | `name` | `text` -> `string` | 房型名称 |
+ | `price` | `price` | `numeric` -> `number` | 价格 |
+ | `size` | `size` | `integer` -> `number` | 面积 (㎡) |
+ | `description` | `description` | `text` -> `string` | 描述信息 |
+ | `max_guests` | `max_guests` | `bigint` -> `number` | 最大入住人数 |
+ | `beds` | `beds` | `jsonb` -> `BedInfo[]` | 床型配置 JSON |
+ | `facilities` | `facilities` | `jsonb` -> `string[]` | 设施标签 JSON |
+ | `images` | `images` | `jsonb` -> `string[]` | 图片列表 JSON |
+ 
+ ### 3. Users 表 (用户信息)
 
-| 数据库字段 | TypeScript 类型 | 说明 |
-|-----------|----------------|------|
-| `id` | `string` | 酒店ID (bigint 转换为 string) |
-| `name_zh` | `string` | 酒店中文名称 |
-| `name_en` | `string` | 酒店英文名称 |
-| `address` | `string` | 酒店地址 (与 region 合并) |
-| `star_rating` | `number` | 酒店星级 |
-| `opening_date` | `string` | 开业日期 |
-| `contact_phone` | `string` | 联系电话 |
-| `image` | `string` | 封面图片URL |
-| `album` | `string[]` | 相册图片数组 |
-| `status` | `"pending" \| "approved" \| "rejected" \| "offline"` | 审核状态 |
-| `merchant_id` | `string` | 商户ID |
-| `updated_at` | `string` | 更新时间 (ISO格式) |
-| `rejected_reason` | `string \| undefined` | 拒绝理由 |
-| `region` | `string` | 地区信息 (JSON字符串) |
+```sql
+ create table public.users ( 
+   id uuid not null, -- 对应 Supabase Auth ID
+   email character varying(255) not null, 
+   username character varying(50) not null, 
+   role character varying(20) not null, -- 'admin' or 'merchant'
+   user_metadata jsonb null default '{}'::jsonb, 
+   created_at timestamp with time zone null default now(), 
+   updated_at timestamp with time zone null default now(), 
+   avatar_url text null, 
+   nickname character varying(50) null, 
+   bio text null, 
+   phone text null, 
+   constraint users_pkey primary key (id), 
+   constraint users_email_key unique (email), 
+   constraint users_username_key unique (username), 
+   constraint users_role_check check (role in ('merchant', 'admin'))
+ ) TABLESPACE pg_default; 
+ 
+ -- 索引与触发器
+ create index IF not exists idx_users_username on public.users using btree (username); 
+ create index IF not exists idx_users_email on public.users using btree (email); 
+ create index IF not exists idx_users_role on public.users using btree (role); 
+ 
+ create trigger trigger_users_updated_at BEFORE update on users 
+  for EACH row execute FUNCTION update_updated_at_column (); 
+ ```
+ 
+ #### 字段映射说明 (Users)
+ 
+ | 数据库字段 | TS 属性 (User) | 类型 | 说明 |
+ | :--- | :--- | :--- | :--- |
+ | `id` | `id` | `uuid` -> `string` | 用户 ID (Supabase Auth) |
+ | `email` | `email` | `varchar` -> `string` | 邮箱 |
+ | `username` | `username` | `varchar` -> `string` | 用户名 |
+ | `role` | `role` | `varchar` -> `UserRole` | 角色: admin/merchant |
+ | `user_metadata` | - | `jsonb` | 扩展元数据 |
+ | `avatar_url` | `avatar` | `text` -> `string` | 头像 URL |
+ | `nickname` | `nickname` | `varchar` -> `string` | 昵称 |
+ | `bio` | `bio` | `text` -> `string` | 个人简介 |
+ | `phone` | `phone` | `text` -> `string` | 手机号 |
+ | `created_at` | `createdAt` | `timestamp` -> `string` | 注册时间 |
+ | `updated_at` | - | `timestamp` -> `string` | 更新时间 |
+ 
+ ### 4. Audit Logs 表 (审计日志)
 
-### 状态说明
+```sql
+create table public.audit_logs ( 
+   id bigint generated by default as identity not null, 
+   created_at timestamp with time zone not null default now(), 
+   operator_id uuid null, 
+   operator_name text not null default 'SYSTEM ADMIN'::text, 
+   target_id bigint not null, 
+   target_name text not null, 
+   action_type text not null, 
+   content text null, 
+   metadata jsonb null default '{}'::jsonb, 
+   constraint audit_logs_pkey primary key (id) 
+  ) TABLESPACE pg_default; 
+ ```
+ 
+ #### 字段映射说明 (Audit Logs)
+ 
+ | 数据库字段 | TS 属性 (AuditLogs) | 类型 | 说明 |
+ | :--- | :--- | :--- | :--- |
+ | `id` | `id` | `bigint` -> `string` | 日志 ID |
+ | `operator_name` | `operator_name` | `text` -> `string` | 操作人姓名 |
+ | `action_type` | `action_type` | `text` -> `string` | 动作类型 |
+ | `target_name` | `target_name` | `text` -> `string` | 操作对象名称 |
+ | `content` | `content` | `text` -> `string` | 操作详情 |
+ | `created_at` | `created_at` | `timestamp` -> `string` | 记录时间 |
+ | `operator_id` | - | `uuid` -> `string` | 操作人 ID |
+ | `target_id` | - | `bigint` -> `string` | 目标对象 ID |
+ | `metadata` | - | `jsonb` | 扩展数据 |
+ 
+ ### 5. Tags 表 (标签管理)
 
-- **pending**: 待审核 - 商户已提交，等待管理员审核
-- **approved**: 已通过 - 审核通过，已上线
-- **rejected**: 已拒绝 - 审核未通过
-- **offline**: 已下线 - 管理员手动下线
+```sql
+ create table public.tags ( 
+   id bigint generated always as identity not null, 
+   name text not null, 
+   category text not null, 
+   is_active boolean not null default true, 
+   created_at timestamp with time zone not null default now(), 
+   constraint tags_pkey primary key (id), 
+    constraint tags_name_key unique (name) 
+  ) TABLESPACE pg_default; 
+ ```
+ 
+ #### 字段映射说明 (Tags)
+ 
+ | 数据库字段 | TS 属性 | 类型 | 说明 |
+ | :--- | :--- | :--- | :--- |
+ | `id` | `id` | `bigint` -> `number` | 标签 ID |
+ | `name` | `name` | `text` -> `string` | 标签名称 |
+ | `category` | `category` | `text` -> `string` | 分类 |
+ | `is_active` | `isActive` | `boolean` | 是否启用 |
+ 
+ ### 6. Verify Codes 表 (验证码)
 
-## 核心功能
+```sql
+ create table public.verify_codes ( 
+   id uuid not null default gen_random_uuid (), 
+   email character varying(100) not null, 
+   code character varying(6) not null, 
+   type character varying(20) not null, 
+   expires_at timestamp without time zone not null, 
+   used boolean null default false, 
+   created_at timestamp without time zone null default now(), 
+   constraint verify_codes_pkey primary key (id) 
+ ) TABLESPACE pg_default; 
+ 
+ create index IF not exists idx_verify_codes_email_type on public.verify_codes using btree (email, type);
+ ```
+ 
+ #### 字段映射说明 (Verify Codes)
+ 
+ | 数据库字段 | TS 属性 | 类型 | 说明 |
+ | :--- | :--- | :--- | :--- |
+ | `id` | `id` | `uuid` -> `string` | 验证码 ID |
+ | `email` | `email` | `varchar` -> `string` | 邮箱 |
+ | `code` | `code` | `varchar` -> `string` | 验证码内容 |
+ | `type` | `type` | `varchar` -> `string` | 用途类型 |
+ | `expires_at` | `expiresAt` | `timestamp` -> `string` | 过期时间 |
+ | `used` | `used` | `boolean` | 是否已使用 |
 
-1. **用户认证系统**: 登录/注册功能
-2. **管理员后台**:
-   - 酒店审核管理 (待审核、已通过、已拒绝)
-   - 酒店上线/下线管理
-   - 搜索和筛选功能
-3. **商户前台**:
-   - 酒店信息管理
-   - 酒店信息提交和编辑
+## 🤝 开发规范
 
-## 开发指南
-
-### 环境变量
-
-项目使用两个 Supabase 客户端配置：
-
-1. **公共客户端** (`src/lib/supabase.ts`) - 用于前端公开操作
-2. **管理端客户端** (`src/lib/supabase_admin.ts`) - 用于服务端管理操作
-
-创建 `.env` 文件并配置 Supabase 连接信息：
-
-```env
-# Supabase 配置
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-```
-
-**安全注意事项**：
-- `SUPABASE_SERVICE_ROLE_KEY` 具有管理员权限，应妥善保管
-- 不要将包含真实密钥的文件提交到版本控制
-- 建议使用 `.env.local` 或 `.env.development` 文件存储本地开发配置
-- 生产环境应使用环境变量或安全的密钥管理服务
-
-### 代码规范
-
-- 使用 TypeScript 进行类型检查
-- 遵循 ESLint 和 Prettier 代码规范
-- 组件使用函数式组件和 React Hooks
-- 状态管理使用 Zustand
-
-## 部署
-
-### Vercel 部署
-
-最简单的部署方式是使用 [Vercel 平台](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme)。
-
-### 其他部署方式
-
-查看 [Next.js 部署文档](https://nextjs.org/docs/app/building-your-application/deploying) 了解更多详情。
+- **组件开发**: 遵循“展示组件”与“容器组件”分离原则，尽量保持组件纯粹。
+- **样式编写**: 优先使用 Tailwind CSS 类名，复杂样式可抽取为组件或使用 `@apply`。
+- **Git 提交**: 建议遵循 Conventional Commits 规范 (feat, fix, docs, style, refactor, test, chore)。

@@ -10,10 +10,21 @@ import {
   IconFile,
   IconSettings,
 } from "@arco-design/web-react/icon";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useMemo } from "react";
 
 export default function Nav() {
   const router = useRouter();
+  const pathname = usePathname();
+
+  const selectedKeys = useMemo(() => {
+    if (pathname.includes("/admin/dashboard")) return ["1"];
+    if (pathname.includes("/admin/audit")) return ["2"];
+    if (pathname.includes("/admin/online")) return ["3"];
+    if (pathname.includes("/admin/logs")) return ["4"];
+    if (pathname.includes("/admin/settings")) return ["5"];
+    return ["1"];
+  }, [pathname]);
 
   function handleClickMenuItem(key: string) {
     if (key === "1") {
@@ -45,6 +56,7 @@ export default function Nav() {
         theme="dark"
         mode="vertical"
         defaultOpenKeys={["1"]}
+        selectedKeys={selectedKeys}
         onClickMenuItem={handleClickMenuItem}
         style={{
           height: "100%",

@@ -24,7 +24,7 @@ export default function HeaderAvatar() {
     }
   }, [user, fetchUser]);
 
-  console.log("HeaderAvatar user:", user);
+  // console.log("HeaderAvatar user:", user);
 
   // 1. 角色文案逻辑
   const getRoleLabel = (role?: string) => {
@@ -64,7 +64,7 @@ export default function HeaderAvatar() {
   // 4. 跳转设置逻辑
   const handleSettings = () => {
     if (user?.role === "admin") {
-      router.push("/admin/setting");
+      router.push("/admin/settings");
     } else if (user?.role === "merchant") {
       router.push("/hotel/management");
     }
