@@ -50,8 +50,12 @@ export default function OnlineView() {
     const tab = searchParams.get("tab");
     if (tab === "approved" || tab === "offline") {
       setActiveTab(tab);
+    } else if (!tab) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("tab", "approved");
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     }
-  }, [searchParams]);
+  }, [searchParams, router, pathname]);
 
   /**
    * 加载酒店数据列表

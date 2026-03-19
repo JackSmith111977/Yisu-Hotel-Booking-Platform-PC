@@ -86,8 +86,12 @@ export default function AuditView() {
     const tab = searchParams.get("tab");
     if (tab === "pending" || tab === "processed") {
       setActiveTab(tab);
+    } else if (!tab) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("tab", "pending");
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     }
-  }, [searchParams]);
+  }, [searchParams, router, pathname]);
 
   /**
    * 统计待审核和已处理的数量
