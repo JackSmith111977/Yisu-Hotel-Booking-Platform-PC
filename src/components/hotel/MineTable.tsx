@@ -8,13 +8,10 @@ interface MineTableProps {
     onEdit: (record: MineHotelInformationType) => void;
     onView?: (record: MineHotelInformationType) => void;
     onDelete?: (id: number) => Promise<boolean>;
-    refreshKey?: number;
-    statusFilter: boolean;
-    keyword?: string;
     data: MineHotelInformationType[];
   }
 
-const MineTable = memo(function MineTable({ onEdit, data, onDelete, statusFilter, onView }: MineTableProps) {  
+const MineTable = memo(function MineTable({ onEdit, data, onDelete, onView }: MineTableProps) {  
   const [confirmVisible, setConfirmVisible] = useState(false);    // 确认弹窗状态
   const [Id, setId] = useState<number | null>(null);  // 存储需删除的 id
 
@@ -30,16 +27,10 @@ const MineTable = memo(function MineTable({ onEdit, data, onDelete, statusFilter
     if (!Id) return;
     if (onDelete) {
       const ok = await onDelete(Id as number);
-      if (!ok) {
-        Message.error('删除失败');
-        return;
-      }
-      setConfirmVisible(false);
+      if (ok) setConfirmVisible(false);
       return;
     }
-
-    Message.error('删除失败');
-  }
+  };
 
   // 主表格 - 酒店列表
   const hotelColumns = [
@@ -79,12 +70,12 @@ const MineTable = memo(function MineTable({ onEdit, data, onDelete, statusFilter
         const config = statusMap[status] || statusMap.pending;
         return <Badge status={config.status} text={config.text} />;
       },
-      filters: statusFilter ?
+      filters:
         [
           { text: "待审核", value: "pending" },
           { text: "已发布", value: "approved" },
           { text: "已下线", value: "offline" },
-        ] : undefined,
+        ],
       onFilter: (value: string, record: MineHotelInformationType) => record.status === value,
     },
     {

@@ -1,25 +1,12 @@
 "use client"
 import AlertBanners from "@/components/hotel/AlertBanners"
 import StatusEChart from "@/components/hotel/StatusEChart";
-import { useState, useEffect, useMemo } from "react";
-import { getHotels } from "@/actions/hotels";
-import { MineHotelInformationType } from "@/types/HotelInformation";
-import { Spin, Card } from "@arco-design/web-react";
+import { useMemo } from "react";
+import { useHotels } from "@/hooks/useHotels";
+import { Card } from "@arco-design/web-react";
 
 export default function DashboardPage() {
-  const [allData, setAllData] = useState<MineHotelInformationType[]>([]);
-  const [loading, setLoading] = useState(true); // 保证 EChart 数据只渲染一次
-
-  useEffect(() => {
-    const fetchData = async () => {
-      console.log('fetch start');
-      const data = await getHotels() || [];
-      console.log('fetch done', data.length);
-      setAllData(data);
-      setLoading(false);
-    };
-    fetchData();
-  }, []);
+  const { hotels: allData, isLoading } = useHotels();
 
   // 审核状态
   const auditData = useMemo(() => [
@@ -53,16 +40,36 @@ export default function DashboardPage() {
     [allData]
   );
 
-  if (loading) return (
+  if (isLoading) return (
+    // 骨架屏
     <Card style={{ height: "100vh" }}>
-      <Spin />
+      <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded" style={{ height: 40, marginBottom: 24 }} />
+      <div style={{ display: 'flex', gap: 24, justifyContent: 'center', marginTop: 24 }}>
+        {[0, 1].map(i => (
+          <div key={i} style={{ width: '100%', maxWidth: 500, border: '1px solid #e5e6eb', borderRadius: 4 }}>
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid #e5e6eb' }}>
+              <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded" style={{ height: 20, width: 100 }} />
+            </div>
+            <div style={{ padding: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20 }}>
+              <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded-full" style={{ width: 200, height: 200 }} />
+              <div style={{ display: 'flex', gap: 16 }}>
+                {[80, 60, 80].map((w, j) => (
+                  <div key={j} className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded" style={{ height: 14, width: w }} />
+                ))}
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
     </Card>
   );
 
   return (
     <Card style={{ height: "100vh" }}>
     <div >
+      {/* 警示条部分 */}
       <AlertBanners draftCount={draftCount} rejectedRoomCount={rejectedRoomCount} />
+      {/* Echart图表部分 */}
       <div style={{ display: 'flex', gap: '24px', marginTop: '24px', justifyContent: 'center' }}>      
         <StatusEChart data={auditData} statusColorMap={auditColorMap} title="审核状态分布"/>
         <StatusEChart data={onlineData} statusColorMap={onlineColorMap} title="上线状态分布"/>
