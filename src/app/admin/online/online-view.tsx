@@ -6,7 +6,7 @@ import { useMessageStore } from "@/store/useMessageStore";
 import { HotelInformation } from "@/types/HotelInformation";
 import { Button, Card, Input, Tabs } from "@arco-design/web-react";
 import { IconRefresh, IconSearch } from "@arco-design/web-react/icon";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 /**
@@ -27,6 +27,20 @@ export default function OnlineView() {
 
   // 获取 URL 参数
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  /**
+   * 处理标签页切换，实现 URL 与 Tab 的双向绑定
+   */
+  const handleTabChange = (key: string) => {
+    setActiveTab(key);
+
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("tab", key);
+
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  };
 
   /**
    * 监听 URL 参数变化，同步 Tab 状态
@@ -84,8 +98,8 @@ export default function OnlineView() {
 
       // 2. 关键词匹配 (酒店名称或 ID)
       const keywordLower = keyword.toLowerCase();
-      const keywordMatch = 
-        item.nameZh.toLowerCase().includes(keywordLower) || 
+      const keywordMatch =
+        item.nameZh.toLowerCase().includes(keywordLower) ||
         item.id.toLowerCase().includes(keywordLower);
 
       return statusMatch && keywordMatch;
@@ -123,19 +137,21 @@ export default function OnlineView() {
       title="酒店上线管理"
       style={{ minHeight: "100%" }}
       extra={
-        <Button 
-          icon={<IconRefresh />} 
-          onClick={handleRefresh} 
-          loading={loading} 
-          disabled={loading}
-        >
+        <Button icon={<IconRefresh />} onClick={handleRefresh} loading={loading} disabled={loading}>
           刷新数据
         </Button>
       }
     >
       {/* 顶部工具栏：包含状态切换和搜索 */}
-      <div style={{ marginBottom: 16, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <Tabs activeTab={activeTab} onChange={setActiveTab} type="rounded">
+      <div
+        style={{
+          marginBottom: 16,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Tabs activeTab={activeTab} onChange={handleTabChange} type="rounded">
           <Tabs.TabPane key="approved" title="已上线酒店" />
           <Tabs.TabPane key="offline" title="已下线酒店" />
         </Tabs>
@@ -150,11 +166,7 @@ export default function OnlineView() {
       </div>
 
       {/* 酒店列表表格 */}
-      <OnlineTable 
-        isLoading={loading} 
-        data={filteredData} 
-        onToggleStatus={handleToggleStatus} 
-      />
+      <OnlineTable isLoading={loading} data={filteredData} onToggleStatus={handleToggleStatus} />
     </Card>
   );
 }
