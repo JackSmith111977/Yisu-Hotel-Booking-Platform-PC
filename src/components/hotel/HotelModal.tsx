@@ -120,6 +120,7 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                                     price: room.price,
                                     size: room.size,
                                     max_guests: room.max_guests,
+                                    quantity: room.quantity,
                                     beds: room.beds ?? [],
                                     facilities: room.facilities ?? [],
                                     description: room.description || '',
@@ -177,6 +178,7 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                                     name: room.name || '',
                                     price: room.price,
                                     size: room.size,
+                                    quantity: room.quantity,
                                     max_guests: room.max_guests,
                                     beds: room.beds ?? [],
                                     facilities: room.facilities ?? [],
@@ -432,7 +434,7 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                                                     </FormItem>
                                                 </Col>
                                                 <Col span={12}>
-                                                    {/* 新增：最大入住人数 */}
+                                                    {/* 最大入住人数 */}
                                                     <FormItem 
                                                         label='最大入住人数' 
                                                         field={`${field.field}.max_guests`}
@@ -445,6 +447,23 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                                                             min={1}
                                                             style={{ width: '100%' }}
                                                             suffix='人'
+                                                        />
+                                                    </FormItem>
+                                                </Col>
+                                                <Col span={12}>
+                                                    {/* 房间数量 */}
+                                                    <FormItem 
+                                                        label='房间数量' 
+                                                        field={`${field.field}.quantity`}
+                                                        rules={[{ required: true, message: '请输入房间数量' }]}
+                                                        labelCol={{ span: 9 }}
+                                                        wrapperCol={{ span: 15 }}
+                                                    >
+                                                        <InputNumber 
+                                                            placeholder='请输入数量'
+                                                            min={1}
+                                                            style={{ width: '100%' }}
+                                                            suffix='间'
                                                         />
                                                     </FormItem>
                                                 </Col>

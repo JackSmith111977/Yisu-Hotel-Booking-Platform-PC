@@ -10,7 +10,6 @@ export interface DraftHotel {
   region?: string | null;
   address?: string | null;
   star_rating?: number | null;
-  total_rooms?: number | null;
   updated_at: string;
   image?: string | null;
 }
@@ -103,13 +102,6 @@ export default function DraftList({ data, loading, onEdit, onDelete }: DraftList
                 {`${JSON.parse(hotel.region || '[]')?.filter((item: string) => item !== '市辖区').join('') || ''}${hotel.address || ''}`}
               </Typography.Text>
             </div>
-
-            {/* 房间数 */}
-            {hotel.total_rooms && (
-              <Typography.Text type="secondary" style={{ fontSize: 12, display: 'block', marginBottom: 12 }}>
-                共 {hotel.total_rooms} 间客房
-              </Typography.Text>
-            )}
 
             {/* 底部操作栏 */}
             <div style={{ 

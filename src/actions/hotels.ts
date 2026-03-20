@@ -166,6 +166,7 @@ export async function replaceRoomTypes(hotelId: number, roomTypes: Partial<Hotel
         name: rt.name,
         price: rt.price,
         size: rt.size,
+        quantity: rt.quantity,
         max_guests: rt.max_guests,
         beds: rt.beds ?? [],
         facilities: rt.facilities ?? [],

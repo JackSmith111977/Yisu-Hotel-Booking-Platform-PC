@@ -165,6 +165,7 @@ export interface HotelRoomTypes {
   name: string;
   price: number;
   size: number;
+  quantity: number;
   description: string;
   max_guests: number;
   beds: { type: string; count: number }[];
