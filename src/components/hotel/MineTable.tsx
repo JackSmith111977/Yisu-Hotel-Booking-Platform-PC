@@ -120,7 +120,7 @@ const MineTable = memo(function MineTable({ onEdit, data, onDelete, onView }: Mi
     {
       title: '房间数量',
       dataIndex: 'quantity',
-      render: (val: number) => val ?? 5,
+      // render: (val: number) => val ?? 5,
       width: 100,
     },
     {

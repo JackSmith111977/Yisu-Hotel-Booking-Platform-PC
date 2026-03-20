@@ -196,6 +196,7 @@ create table public.room_types (
    name text null, 
    price numeric null, 
    size integer null, 
+   quantity integer null,
    description text null, 
    max_guests bigint null, 
    beds jsonb null, 
@@ -208,9 +209,6 @@ create table public.room_types (
  -- 触发器
  create trigger room_types_search_vector_update after INSERT or DELETE or update on room_types 
  for EACH row execute FUNCTION room_types_search_vector_trigger (); 
- 
- create trigger trg_auto_room_availability after INSERT on room_types 
-  for EACH row execute FUNCTION auto_create_room_availability (); 
  ```
  
  #### 字段映射说明 (Room Types)
@@ -222,6 +220,7 @@ create table public.room_types (
  | `name` | `name` | `text` -> `string` | 房型名称 |
  | `price` | `price` | `numeric` -> `number` | 价格 |
  | `size` | `size` | `integer` -> `number` | 面积 (㎡) |
+  | `quantity` | `quantity` | `integer` -> `number` | 房间总数 |
  | `description` | `description` | `text` -> `string` | 描述信息 |
  | `max_guests` | `max_guests` | `bigint` -> `number` | 最大入住人数 |
  | `beds` | `beds` | `jsonb` -> `BedInfo[]` | 床型配置 JSON |
