@@ -15,7 +15,7 @@ import { useUserStore } from "@/store/useUserStore";
 import { logout } from "@/actions/auth";
 
 export default function HeaderAvatar() {
-  const { user, fetchUser, isLoading } = useUserStore();
+  const { user, fetchUser, clearUser, isLoading } = useUserStore();
   const router = useRouter();
 
   useEffect(() => {
@@ -54,6 +54,7 @@ export default function HeaderAvatar() {
   const handleLogout = async () => {
     const result = await logout();
     if (result.success) {
+      clearUser();
       Message.success(result.message || "退出成功");
       router.replace("/login");
     } else {

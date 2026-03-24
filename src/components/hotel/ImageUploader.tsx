@@ -12,46 +12,27 @@ import {
   Message,
   Spin,
 } from '@arco-design/web-react';
+import NextImage from 'next/image';
 import { IconPlus, IconDelete, IconLink, IconUpload } from '@arco-design/web-react/icon';
 
 export interface UploadedImage {
-  /** data-URL of the cropped image, ready to show in <img> */
+  /** 裁切后的图片 data-URL，可直接用于 <img> 展示 */
   dataUrl: string;
   /**
-   * After you upload to Supabase Storage, replace this with the public URL.
-   * Keep undefined until the server round-trip completes.
+   * 上传到 Supabase Storage 后，用公开 URL 替换此字段。
+   * 在服务器请求完成之前保持 undefined。
    */
   remoteUrl?: string;
 }
 
-interface ImageUploaderProps {
-  /** Controlled value – array of uploaded images */
-  value?: UploadedImage[];
-  onChange?: (images: UploadedImage[]) => void;
-  /** Maximum number of images allowed (default 9) */
-  max?: number;
-  /** Label used in button / hint text (default "图片") */
-  label?: string;
-}
-
-const ASPECT_RATIO = 4 / 3; // locked 4 : 3
+const ASPECT_RATIO = 4 / 3; // 锁定 4:3 比例
 const THUMB_W = 128;
-const THUMB_H = THUMB_W / ASPECT_RATIO; // 96
-
-/** Read a File as a data-URL string */
-function readFileAsDataUrl(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = (e) => resolve(e.target?.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
-  });
-}
+const THUMB_H = THUMB_W / ASPECT_RATIO; // 高度 96px
 
 /**
- * Try to proxy-load a remote URL through a canvas so Cropperjs can use it.
- * If CORS is blocked you'll see a tainted-canvas error – in that case the
- * user should download the image and upload it as a file instead.
+ * 尝试通过 canvas 代理加载远程 URL，以便 Cropperjs 使用。
+ * 若遭遇 CORS 跨域限制，会出现 tainted-canvas 错误——
+ * 此时用户应将图片下载到本地后改用文件上传方式。
  */
 function remoteUrlToDataUrl(url: string): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -70,19 +51,17 @@ function remoteUrlToDataUrl(url: string): Promise<string> {
           '无法加载该链接的图片，可能是跨域限制，请改用本地上传。'
         )
       );
-    img.src = url;
+    img.src = url;  // 赋值后加载图片
   });
 }
 
-function Thumb({
-  src,
-  index,
-  onDelete,
-}: {
-  src: string;
-  index: number;
+interface ThumbProps {
+  src: string; 
+  index: number; 
   onDelete: (i: number) => void;
-}) {
+}
+
+function Thumb({ src, index, onDelete }: ThumbProps) {
   const [hovered, setHovered] = useState(false);
 
   return (
@@ -99,12 +78,12 @@ function Thumb({
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <img
+      <NextImage
         src={src}
         alt={`图片 ${index + 1}`}
         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
       />
-      {/* Overlay on hover */}
+      {/* 悬停时显示的遮罩层 */}
       <div
         style={{
           position: 'absolute',
@@ -136,25 +115,27 @@ function Thumb({
   );
 }
 
-export default function ImageUploader({
-  value = [],
-  onChange,
-  max = 9,
-  label = '图片',
-}: ImageUploaderProps) {
-  // ── picker modal state
+interface ImageUploaderProps {
+  value?: UploadedImage[];  // 受控值，已上传的图片数组
+  onChange?: (images: UploadedImage[]) => void;
+  max?: number; // 最多允许上传的图片数量
+  label?: string; // 按钮及提示文字中使用的标签
+}
+
+export default function ImageUploader({ value = [], onChange, max = 9, label = '图片'}: ImageUploaderProps) {
+  // ── 选图弹窗状态
   const [pickerOpen, setPickerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('upload');
   const [urlInput, setUrlInput] = useState('');
   const [urlLoading, setUrlLoading] = useState(false);
 
-  // ── crop modal state (shown after an image source is resolved)
+  // ── 裁切弹窗状态（图片来源解析完成后展示）
   const [cropOpen, setCropOpen] = useState(false);
   const [imageSrc, setImageSrc] = useState('');
 
   const cropperRef = useRef<ReactCropperElement>(null);
 
-  // ── helpers ──────────────────────────────────────────────────────────────────
+  // ── 辅助函数 ──────────────────────────────────────────────────────────────────
 
   const openWithSrc = (src: string) => {
     setImageSrc(src);
@@ -168,16 +149,11 @@ export default function ImageUploader({
     setActiveTab('upload');
   };
 
-  // ── event handlers ────────────────────────────────────────────────────────────
+  // ── 事件处理 ────────────────────────────────────────────────────────────────
 
-  /** Called by Arco Upload – return false so the component won't auto-POST */
-  const handleFileBeforeUpload = async (file: File) => {
-    try {
-      const dataUrl = await readFileAsDataUrl(file);
-      openWithSrc(dataUrl);
-    } catch {
-      Message.error('读取文件失败');
-    }
+  /** 由 Arco Upload 调用——返回 false 阻止组件自动发起 POST 请求 */
+  const handleFileBeforeUpload = (file: File) => {
+    openWithSrc(URL.createObjectURL(file));
     return false;
   };
 
@@ -208,6 +184,7 @@ export default function ImageUploader({
 
     onChange?.([...value, { dataUrl: croppedDataUrl }]);
     setCropOpen(false);
+    if (imageSrc.startsWith('blob:')) URL.revokeObjectURL(imageSrc);
     setImageSrc('');
   };
 
@@ -215,13 +192,14 @@ export default function ImageUploader({
     onChange?.(value.filter((_, i) => i !== index));
   };
 
-  // ── render ────────────────────────────────────────────────────────────────────
+  // ── 渲染 ────────────────────────────────────────────────────────────────────
 
   return (
     <>
-      {/* ── Thumbnail strip ─────────────────────────────────────────────────── */}
+      {/* ── 缩略图列表 ─────────────────────────────────────────────────── */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'flex-start' }}>
         {value.map((img, idx) => (
+          // 单张缩略图的展示组件
           <Thumb
             key={idx}
             src={img.remoteUrl ?? img.dataUrl}
@@ -266,7 +244,7 @@ export default function ImageUploader({
         )}
       </div>
 
-      {/* ── Picker modal (choose upload vs URL) ─────────────────────────────── */}
+      {/* ── 选图弹窗（本地上传 或 图片链接） ─────────────────────────────── */}
       <Modal
         title={`添加${label}`}
         visible={pickerOpen}
@@ -276,7 +254,7 @@ export default function ImageUploader({
         unmountOnExit
       >
         <Tabs activeTab={activeTab} onChange={setActiveTab}>
-          {/* ── Tab 1: local file ─────────────────────────────────────────── */}
+          {/* ── Tab 1: 本地文件 ─────────────────────────────────────────── */}
           <Tabs.TabPane
             key="upload"
             title={
@@ -305,7 +283,7 @@ export default function ImageUploader({
             </Upload>
           </Tabs.TabPane>
 
-          {/* ── Tab 2: URL ────────────────────────────────────────────────── */}
+          {/* ── Tab 2: 图片链接 ────────────────────────────────────────────────── */}
           <Tabs.TabPane
             key="url"
             title={
@@ -342,18 +320,19 @@ export default function ImageUploader({
         </Tabs>
       </Modal>
 
-      {/* ── Crop modal ───────────────────────────────────────────────────────── */}
+      {/* ── 裁切弹窗 ───────────────────────────────────────────────────────── */}
       <Modal
         title="裁切图片（比例固定 4:3）"
         visible={cropOpen}
         style={{ width: 640 }}
-        onCancel={() => { setCropOpen(false); setImageSrc(''); }}
+        onCancel={() => { setCropOpen(false); if (imageSrc.startsWith('blob:')) URL.revokeObjectURL(imageSrc); setImageSrc(''); }}
         footer={
           <>
             <Button
               onClick={() => {
-                // go back to picker
+                // 返回选图弹窗
                 setCropOpen(false);
+                if (imageSrc.startsWith('blob:')) URL.revokeObjectURL(imageSrc);
                 setImageSrc('');
                 setPickerOpen(true);
               }}
