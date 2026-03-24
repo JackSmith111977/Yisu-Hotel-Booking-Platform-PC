@@ -28,6 +28,11 @@ interface UserState {
   updateUser: (data: Partial<User>) => Promise<{ success: boolean; message?: string }>;
 
   /**
+   * 退出登录时清空用户状态
+   */
+  clearUser: () => void;
+
+  /**
    * 初始化草稿
    * 当用户点击“编辑”时调用，将当前 user 数据复制一份到 draftProfile
    */
@@ -127,6 +132,11 @@ export const useUserStore = create<UserState>()(
           set({ isLoading: false });
           return { success: false, message: "更新失败，请稍后重试" };
         }
+      },
+
+      // 退出登录时清空用户状态，防止下一个登录用户读到旧缓存
+      clearUser: () => {
+        set({ user: null, draftProfile: null, hasDraft: false });
       },
 
       // --- 草稿逻辑 ---
