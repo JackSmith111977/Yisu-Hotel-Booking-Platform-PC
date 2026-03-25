@@ -9,6 +9,7 @@ import { Input, Message, Card } from "@arco-design/web-react";
 import { deleteHotel } from "@/actions/hotels";
 import { useHotels, mutateHotels } from "@/hooks/useHotels";
 import { toast } from "sonner";
+import { useUserStore } from "@/store/useUserStore";
 
 export default function ManagementPage() {
   const { hotels: allHotels, isLoading } = useHotels();
@@ -17,6 +18,7 @@ export default function ManagementPage() {
   const [keyword, setKeyword] = useState("");
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [curRecord, setCurRecord] = useState<MineHotelInformationType | null>(null);
+  const userId = useUserStore((state) => state.user?.id);
 
   const data = useMemo(() => {
     let filtered = allHotels.filter((item: MineHotelInformationType) => item.status !== 'draft' && item.status !== 'rejected');
@@ -57,7 +59,7 @@ export default function ManagementPage() {
     return true;
   }, []);
 
-  if (isLoading) return (
+  if (isLoading || !userId) return (
     <Card style={{ height: "100vh" }}>
       <div style={{ padding: '10px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>

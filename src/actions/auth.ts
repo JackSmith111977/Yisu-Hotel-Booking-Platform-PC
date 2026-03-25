@@ -326,10 +326,19 @@ export async function loginWithJWT(formData: {
       .eq("email", email)
       .single();
 
+    // 服务端写 HttpOnly Cookie，token 不返回给客户端
+    const cookieStore = await cookies();
+    cookieStore.set("auth_token", data.session.access_token, {
+      httpOnly: true,
+      path: "/",
+      maxAge: 86400,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    });
+
     return {
       success: true,
       message: "登录成功",
-      token: data.session.access_token,
       user: {
         id: data.user.id,
         username: userInfo?.username || "",

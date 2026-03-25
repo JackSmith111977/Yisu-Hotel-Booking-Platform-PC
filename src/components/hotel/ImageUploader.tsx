@@ -12,7 +12,6 @@ import {
   Message,
   Spin,
 } from '@arco-design/web-react';
-import NextImage from 'next/image';
 import { IconPlus, IconDelete, IconLink, IconUpload } from '@arco-design/web-react/icon';
 
 export interface UploadedImage {
@@ -78,7 +77,7 @@ function Thumb({ src, index, onDelete }: ThumbProps) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <NextImage
+      <img
         src={src}
         alt={`图片 ${index + 1}`}
         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}

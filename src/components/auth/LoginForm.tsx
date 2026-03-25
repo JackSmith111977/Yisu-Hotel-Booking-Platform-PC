@@ -12,16 +12,6 @@ interface FormData {
   password: string;
 }
 
-// 新增：封装Cookie操作工具（方便存/取/删Token）
-const setAuthCookie = (token: string) => {
-  // 存Cookie：有效期24小时，适配中间件读取
-  document.cookie = `auth_token=${token}; path=/; max-age=86400; SameSite=Lax; secure=${process.env.NODE_ENV === 'production'};`;
-};
-
-const removeAuthCookie = () => {
-  // 删Cookie：登录失效时用
-  document.cookie = 'auth_token=; path=/; max-age=0; SameSite=Lax;';
-};
 
 export default function LoginForm() {
   const router = useRouter();
@@ -60,21 +50,16 @@ export default function LoginForm() {
 
     if (res.success) {
       Message.success(res.message);
-      // ========== 核心修改1：Token存Cookie（替代localStorage） ==========
-      if (res.token && res.user) {
-        setAuthCookie(res.token); // 存到Cookie，供中间件读取
-        // 可选：localStorage仍保留（前端页面显示用户信息用）
+      if (res.user) {
         localStorage.setItem('user_info', JSON.stringify(res.user));
       }
       // 按角色跳转
       if (res.user?.role === 'admin') {
-        router.push('/admin'); // 管理员跳后台
+        router.push('/admin');
       } else if (res.user?.role === 'merchant') {
-        router.push('/hotel'); // 商户跳商家页面
+        router.push('/hotel');
       }
     } else {
-      // 登录失败：清空无效Cookie
-      removeAuthCookie();
       setErrorMsg(res.message);
     }
   };

@@ -9,6 +9,7 @@ import HotelModal from '@/components/hotel/HotelModal';
 import { useSearchParams } from "next/navigation";
 import { DraftHotel } from '@/components/hotel/DraftList';
 import { useHotels, mutateHotels } from '@/hooks/useHotels';
+import { useUserStore } from '@/store/useUserStore';
 
 const TabPane = Tabs.TabPane;
 
@@ -23,6 +24,7 @@ function TodoPageContent() {
     const tab = searchParams.get("tab");
     return tab === "draft" || tab === "rejected" ? tab : "draft";
   });
+  const userId = useUserStore((state) => state.user?.id);
 
   const draftData: Partial<MineHotelInformationType>[] = useMemo(() =>
     allData.filter(item => item.status === 'draft'),
@@ -68,7 +70,7 @@ function TodoPageContent() {
     mutateHotels();
   };
 
-  if (isLoading) return (
+  if (isLoading || !userId) return (
     <Card style={{ height: "100%" }}>
       <div style={{ padding: 24 }}>
         <div style={{ display: 'flex', gap: 24, borderBottom: '1px solid #e5e6eb', paddingBottom: 12, marginBottom: 20 }}>
