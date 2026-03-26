@@ -1,7 +1,7 @@
 "use client";
 import { Tabs, Badge, Modal, Card } from '@arco-design/web-react';
 import { useState, useMemo, Suspense } from 'react';
-import { deleteHotel } from '@/actions/hotels';
+import { deleteHotelWithCleanup } from '@/actions/hotels';
 import { MineHotelInformationType } from '@/types/HotelInformation';
 import RejectedList from '@/components/hotel/RejectedList';
 import DraftList from '@/components/hotel/DraftList';
@@ -51,9 +51,11 @@ function TodoPageContent() {
 
   const handleConfirmDelete = async () => {
     if (deletingId !== null) {
-      const result = await deleteHotel(deletingId);
-      if (result) {
+      try {
+        await deleteHotelWithCleanup(deletingId);
         mutateHotels();
+      } catch (e) {
+        console.error('删除失败:', e);
       }
     }
     setConfirmVisible(false);

@@ -86,11 +86,15 @@ export async function getUserProfile() {
       .from("users")
       .select("*")
       .eq("id", userId)
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error("Get user profile error:", error);
       return { success: false, message: "获取用户信息失败" };
+    }
+
+    if (!user) {
+      return { success: false, message: "用户不存在" };
     }
 
     return { success: true, data: user };

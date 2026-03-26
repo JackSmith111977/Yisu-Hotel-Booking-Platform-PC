@@ -324,7 +324,7 @@ export async function loginWithJWT(formData: {
       .from("users")
       .select("username")
       .eq("email", email)
-      .single();
+      .maybeSingle();
 
     // 服务端写 HttpOnly Cookie，token 不返回给客户端
     const cookieStore = await cookies();

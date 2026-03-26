@@ -6,7 +6,7 @@ import HotelDrawer from "@/components/hotel/HotelDrawer";
 import { MineHotelInformationType } from "@/types/HotelInformation";
 import { useState, useCallback, useMemo } from "react";
 import { Input, Message, Card } from "@arco-design/web-react";
-import { deleteHotel } from "@/actions/hotels";
+import { deleteHotelWithCleanup } from "@/actions/hotels";
 import { useHotels, mutateHotels } from "@/hooks/useHotels";
 import { toast } from "sonner";
 import { useUserStore } from "@/store/useUserStore";
@@ -49,14 +49,15 @@ export default function ManagementPage() {
   }, []);
 
   const handleDelete = useCallback(async (id: number) => {
-    const ok = await deleteHotel(id);
-    if (!ok) {
+    try {
+      await deleteHotelWithCleanup(id);
+      await mutateHotels();
+      toast.success('删除成功');
+      return true;
+    } catch {
       toast.error('删除失败');
       return false;
     }
-    await mutateHotels();
-    toast.success('删除成功');
-    return true;
   }, []);
 
   if (isLoading || !userId) return (
