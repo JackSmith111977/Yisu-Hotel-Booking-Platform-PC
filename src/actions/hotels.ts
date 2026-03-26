@@ -1,191 +1,114 @@
 'use server';
-import { supabase_admin } from "@/lib/supabase_admin";
-import { MineHotelInformationType, HotelRoomTypes } from "@/types/HotelInformation";
-import { createMerchantClient } from "@/lib/supabase_merchant";
+import { supabase_admin } from '@/lib/supabase_admin';
+import { createMerchantClient } from '@/lib/supabase_merchant';
+import type { MineHotelInformationType, HotelRoomTypes } from '@/types/HotelInformation';
 
-// ─── 获取当前登录商户的 user id ───────────────────────────────────────────────
-// 抽成公共函数，避免每个 action 重复写
-async function getCurrentMerchantId(): Promise<string | null> {
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  鉴权
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+async function getMerchantSession() {
     const supabase = await createMerchantClient();
     const { data: { user }, error } = await supabase.auth.getUser();
-    if (error || !user) return null;
-    return user.id;
+    if (error || !user) throw new Error('未登录或 token 无效');
+    return { supabase, merchantId: user.id };
 }
 
-// ─── 删除酒店 ─────────────────────────────────────────────────────────────────
-// 加上 .eq('merchant_id', merchantId)，确保只能删自己的酒店
-export async function deleteHotel(id: number) {
-    const merchantId = await getCurrentMerchantId();
-    if (!merchantId) {
-        console.error('deleteHotel: 未登录或 token 无效');
-        return false;
-    }
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  查询
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-    const supabase = await createMerchantClient();
-    const { error } = await supabase
-        .from('hotels')
-        .delete()
-        .eq('id', id)
-        .eq('merchant_id', merchantId); // ← 防止删除他人酒店
-    
-    if (error) {
-        console.error('删除酒店失败:', error);
-        return false;
-    }
-    return true;
-}
-
-// ─── 创建酒店 ─────────────────────────────────────────────────────────────────
-// 原逻辑已经注入 merchant_id，保持不变
-export async function createHotels(data: Partial<MineHotelInformationType>) {
-    const supabase = await createMerchantClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-        console.error('createHotels: 未登录');
-        return null;
-    }
-
-    const { data: hotel, error } = await supabase
-        .from('hotels')
-        .insert({ ...data, merchant_id: user.id })
-        .select()
-        .single();
-    
-    if (error) {
-        console.error('创建酒店失败:', error);
-        return null;
-    }
-    
-    console.log('创建成功');
-    return hotel;
-}
-
-// ─── 创建房型（新建流程用）────────────────────────────────────────────────────
-export async function createRoomTypes(data: Partial<HotelRoomTypes>[]) {
-    const { error } = await supabase_admin
-        .from('room_types')
-        .insert(data);
-    
-    if (error) {
-        console.error('创建房型失败:', error);
-        throw error;
-    }
-    
-    return true;
-}
-
-// ─── 获取当前商户的酒店列表 ───────────────────────────────────────────────────
-// 加上 .eq('merchant_id', merchantId)，只返回自己的酒店
 export async function getHotels() {
-    const merchantId = await getCurrentMerchantId();
-    if (!merchantId) {
-        console.error('getHotels: 未登录或 token 无效');
-        return [];
-    }
+    const { supabase, merchantId } = await getMerchantSession();
 
-    const supabase = await createMerchantClient();
     const { data, error } = await supabase
         .from('hotels')
         .select('*, room_types(*)')
-        .eq('merchant_id', merchantId) // ← 只查自己的
+        .eq('merchant_id', merchantId)
         .order('updated_at', { ascending: false });
 
     if (error) {
-        console.error(error);
+        console.error('获取酒店列表失败:', error);
         return [];
     }
-
     return data;
 }
 
-// ─── 更新酒店 ─────────────────────────────────────────────────────────────────
-// 加上 .eq('merchant_id', merchantId)，确保只能改自己的酒店
-export async function updateHotel(id: number, data: Partial<MineHotelInformationType>) {
-    const merchantId = await getCurrentMerchantId();
-    if (!merchantId) {
-        console.error('updateHotel: 未登录或 token 无效');
-        return null;
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  创建酒店 + 房型（RPC 事务，原子性保证）
+//  调用前：组件负责上传所有图片，传入 image/album/room images 均为远程 URL
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export async function createHotelWithRooms(
+    hotelData: Partial<MineHotelInformationType>,
+    roomTypes: Partial<HotelRoomTypes>[],
+): Promise<{ hotel_id: number }> {
+    const { supabase } = await getMerchantSession();
+
+    const { data, error } = await supabase.rpc('create_hotel_with_rooms', {
+        p_hotel: hotelData,
+        p_rooms: roomTypes,
+    });
+
+    if (error) {
+        console.error('创建酒店失败:', error);
+        throw new Error('创建酒店失败: ' + error.message);
     }
 
-    const supabase = await createMerchantClient();
-    const { data: hotel, error } = await supabase
-        .from('hotels')
-        .update(data)
-        .eq('id', id)
-        .eq('merchant_id', merchantId) // ← 防止修改他人酒店
-        .select()
-        .single();
+    return data as { hotel_id: number };
+}
+
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  更新酒店 + 替换房型（RPC 事务，归属校验在数据库层完成）
+//  调用前：组件负责上传所有图片
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export async function updateHotelWithRooms(
+    hotelId: number,
+    hotelData: Partial<MineHotelInformationType>,
+    roomTypes: Partial<HotelRoomTypes>[],
+): Promise<void> {
+    const { supabase } = await getMerchantSession();
+
+    const { error } = await supabase.rpc('update_hotel_with_rooms', {
+        p_hotel_id: hotelId,
+        p_hotel: hotelData,
+        p_rooms: roomTypes,
+    });
 
     if (error) {
         console.error('更新酒店失败:', error);
-        return null;
+        throw new Error('更新酒店失败: ' + error.message);
     }
-    return hotel;
 }
 
-// ─── 替换某酒店的房型 ─────────────────────────────────────────────────────────
-// 由于用的是 supabase_admin（绕过 RLS），必须在应用层先确认这个 hotelId 归属当前商户
-export async function replaceRoomTypes(hotelId: number, roomTypes: Partial<HotelRoomTypes>[]) {
-    const merchantId = await getCurrentMerchantId();
-    if (!merchantId) {
-        console.error('replaceRoomTypes: 未登录或 token 无效');
-        throw new Error('未登录');
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  删除酒店（RPC 事务删除数据，成功后清理 Storage 图片）
+//  Storage 清理失败不影响业务一致性，只记录日志
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export async function deleteHotelWithCleanup(hotelId: number): Promise<void> {
+    const { supabase } = await getMerchantSession();
+
+    const { error } = await supabase.rpc('delete_hotel', {
+        p_hotel_id: hotelId,
+    });
+
+    if (error) {
+        console.error('删除酒店失败:', error);
+        throw new Error('删除酒店失败: ' + error.message);
     }
 
-    // 用 merchantClient 查一次，确认 hotelId 归属当前商户
-    // 如果不属于当前商户，返回 null（RLS 会过滤掉），直接拒绝后续 admin 操作
-    const supabase = await createMerchantClient();
-    const { data: hotel, error: ownerErr } = await supabase
-        .from('hotels')
-        .select('id')
-        .eq('id', hotelId)
-        .eq('merchant_id', merchantId)
-        .single();
-
-    if (ownerErr || !hotel) {
-        console.error('replaceRoomTypes: 无权操作该酒店，hotelId=', hotelId);
-        throw new Error('无权操作该酒店的房型');
-    }
-
-    // 归属确认通过，再用 admin 执行删除 + 插入
-    const { error: delErr } = await supabase_admin
-        .from('room_types')
-        .delete()
-        .eq('hotel_id', hotelId);
-
-    if (delErr) {
-        console.error('删除旧房型失败:', delErr);
-        throw delErr;
-    }
-
-    if (!roomTypes || roomTypes.length === 0) return true;
-
-    const insertData = roomTypes.map(rt => ({
-        hotel_id: hotelId,
-        name: rt.name,
-        price: rt.price,
-        size: rt.size,
-        quantity: rt.quantity,
-        max_guests: rt.max_guests,
-        beds: rt.beds ?? [],
-        facilities: rt.facilities ?? [],
-        description: rt.description,
-        images: rt.images
-    }));
-
-    const { error: insErr } = await supabase_admin
-        .from('room_types')
-        .insert(insertData);
-
-    if (insErr) {
-        console.error('插入房型失败:', insErr);
-        throw insErr;
-    }
-    return true;
+    // 数据已删除，清理 Storage（失败不影响业务）
+    await deleteStorageFolder(`hotel_${hotelId}`).catch(e =>
+        console.error('清理酒店图片失败（不影响业务）:', e)
+    );
 }
 
-// ─── 上传酒店图片到 Storage ───────────────────────────────────────────────────
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+//  图片存储工具函数（组件直接调用，Storage 不参与数据库事务）
+// ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 export async function uploadHotelImages(
     dataUrls: string[],
     folder: string,
@@ -195,7 +118,7 @@ export async function uploadHotelImages(
     for (let i = 0; i < dataUrls.length; i++) {
         const dataUrl = dataUrls[i];
 
-        // 跳过已经是远程 URL 的图片（编辑模式下未改动的图）
+        // 已经是远程 URL（编辑模式下未改动的图），直接保留
         if (!dataUrl.startsWith('data:')) {
             results.push(dataUrl);
             continue;
@@ -204,7 +127,8 @@ export async function uploadHotelImages(
         const res = await fetch(dataUrl);
         const blob = await res.blob();
         const ext = blob.type.split('/')[1] ?? 'jpg';
-        const path = `${folder}/${Date.now()}_${i}.${ext}`;
+        const uniqueId = crypto.randomUUID().slice(0, 8);
+        const path = `${folder}/${Date.now()}_${uniqueId}_${i}.${ext}`;
 
         const { error } = await supabase_admin.storage
             .from('hotels')
@@ -225,7 +149,6 @@ export async function uploadHotelImages(
     return results;
 }
 
-// ─── 删除 Storage 中某个文件夹下的所有图片 ───────────────────────────────────
 export async function deleteStorageFolder(folder: string): Promise<void> {
     const { data: files, error: listErr } = await supabase_admin.storage
         .from('hotels')
@@ -238,5 +161,5 @@ export async function deleteStorageFolder(folder: string): Promise<void> {
         .from('hotels')
         .remove(paths);
 
-    if (delErr) console.error('删除旧图片失败:', delErr);
+    if (delErr) throw new Error('删除图片失败: ' + delErr.message);
 }

@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { createHotels, createRoomTypes, updateHotel, replaceRoomTypes } from '@/actions/hotels';
-import { 
-    Form, 
-    Input, 
-    Modal, 
-    Button, 
-    DatePicker, 
+import { createHotelWithRooms, updateHotelWithRooms, uploadHotelImages, deleteStorageFolder } from '@/actions/hotels';
+import {
+    Form,
+    Input,
+    Modal,
+    Button,
+    DatePicker,
     InputNumber,
     Card,
     Grid,
@@ -17,7 +17,6 @@ import { IconPlus, IconDelete } from '@arco-design/web-react/icon';
 import pcaData from 'china-division/dist/pca.json'
 import { MineHotelInformationType, HotelRoomTypes, AddressDataType } from '@/types/HotelInformation';
 import ImageUploader, { UploadedImage } from './ImageUploader';
-import { uploadHotelImages, deleteStorageFolder } from '@/actions/hotels';
 import { Dispatch, SetStateAction, useEffect } from 'react';
 import { toast } from 'sonner';
 import HotelTagSelector from './HotelTagSelector';
@@ -70,7 +69,7 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
         try {
             const values = okStatus === 'draft' ? form.getFieldsValue() : await form.validate();
             setConfirmLoading(true);
-    
+
             const hotelData: Partial<MineHotelInformationType> = {
                 name_zh: values.nameZh,
                 name_en: values.nameEn,
@@ -82,125 +81,112 @@ const HotelModal = ({ modalVisible, setModalVisible, initialData, onCreated }: H
                 status: okStatus === 'draft' ? 'draft' : 'pending',
                 tags: values.tags ?? [],
             };
-    
+
             if (initialData) {
-                // 编辑模式
-                const editImgInputs: UploadedImage[] = values.hotelImages ?? [];
-                const editImgDataUrls = editImgInputs.map(img => img.remoteUrl ?? img.dataUrl);
+                // ── 编辑模式 ──────────────────────────────────────────────
+                const folder = `hotel_${initialData.id}`;
+
+                // 1. 清理旧图片（失败不中断流程）
                 setSubmitStep('正在清理旧图片...');
-                await deleteStorageFolder(`hotel_${initialData.id}`);
-                setSubmitStep('正在上传酒店图片...');
-                const uploadedHotelUrls = await uploadHotelImages(
-                    editImgDataUrls,
-                    `hotel_${initialData.id}`,
+                await deleteStorageFolder(folder).catch(e =>
+                    console.warn('清理旧图片失败，继续执行:', e)
                 );
 
-                setSubmitStep('正在更新酒店信息...');
-                const hotel = await updateHotel(initialData.id as number, {
-                    ...hotelData,
-                    image: uploadedHotelUrls[0] ?? null,
-                    album: uploadedHotelUrls.slice(1),
-                });
+                // 2. 上传酒店封面 + 相册
+                setSubmitStep('正在上传酒店图片...');
+                const editImgDataUrls = (values.hotelImages as UploadedImage[] ?? [])
+                    .map(img => img.remoteUrl ?? img.dataUrl);
+                const uploadedHotelUrls = await uploadHotelImages(editImgDataUrls, folder);
 
-                if (hotel) {
-                    if (values.roomTypes?.length > 0) {
-                        setSubmitStep('正在上传房型图片...');
-                        const roomTypesData = await Promise.all(
-                            values.roomTypes.map(async (room: HotelRoomTypes & { images?: UploadedImage[] }, index: number) => {
-                                const roomImgDataUrls = (room.images ?? []).map(img => {
-                                    const i = img as unknown as UploadedImage;
-                                    return i.remoteUrl ?? i.dataUrl;
-                                });
-                                const uploadedRoomUrls = await uploadHotelImages(
-                                    roomImgDataUrls,
-                                    `hotel_${initialData.id}/room_${index}`,
-                                );
-                                return {
-                                    name: room.name || '',
-                                    price: room.price,
-                                    size: room.size,
-                                    max_guests: room.max_guests,
-                                    quantity: room.quantity,
-                                    beds: room.beds ?? [],
-                                    facilities: room.facilities ?? [],
-                                    description: room.description || '',
-                                    images: uploadedRoomUrls,
-                                };
-                            })
+                // 3. 上传各房型图片
+                setSubmitStep('正在上传房型图片...');
+                const roomTypesData = await Promise.all(
+                    (values.roomTypes ?? []).map(async (room: HotelRoomTypes & { images?: UploadedImage[] }, index: number) => {
+                        const roomImgDataUrls = (room.images ?? []).map(img => {
+                            const i = img as unknown as UploadedImage;
+                            return i.remoteUrl ?? i.dataUrl;
+                        });
+                        const uploadedRoomUrls = await uploadHotelImages(
+                            roomImgDataUrls,
+                            `${folder}/room_${index}`,
                         );
-                        setSubmitStep('正在更新房型...');
-                        console.log('替换房型数据:', roomTypesData);
-                        await replaceRoomTypes(initialData.id as number, roomTypesData);
-                    } else {
-                        await replaceRoomTypes(initialData.id as number, []);
-                    }
+                        return {
+                            name: room.name || '',
+                            price: room.price,
+                            size: room.size,
+                            max_guests: room.max_guests,
+                            quantity: room.quantity,
+                            beds: room.beds ?? [],
+                            facilities: room.facilities ?? [],
+                            description: room.description || '',
+                            images: uploadedRoomUrls,
+                        };
+                    })
+                );
 
-                    toast.success(okStatus === 'draft' ? '草稿已保存' : '更新成功');
-                    setModalVisible(false);
-                    if (onCreated) onCreated();
-                    form.resetFields();
-                } else {
-                    toast.error('更新失败');
-                }
+                // 4. RPC 事务更新酒店 + 替换房型
+                setSubmitStep('正在更新酒店信息...');
+                await updateHotelWithRooms(
+                    initialData.id as number,
+                    { ...hotelData, image: uploadedHotelUrls[0] ?? null, album: uploadedHotelUrls.slice(1) },
+                    roomTypesData,
+                );
 
             } else {
-                // 创建模式
-                setSubmitStep('正在创建酒店...');
-                const hotel = await createHotels(hotelData as MineHotelInformationType);
+                // ── 创建模式 ──────────────────────────────────────────────
+                const tempFolder = `hotel_temp_${Date.now()}`;
 
-                if (hotel) {
-                    const hotelImgInputs: UploadedImage[] = values.hotelImages ?? [];
-                    const hotelImgDataUrls = hotelImgInputs.map(img => img.remoteUrl ?? img.dataUrl);
-                    setSubmitStep('正在上传酒店图片...');
-                    const uploadedHotelUrls = await uploadHotelImages(
-                        hotelImgDataUrls,
-                        `hotel_${hotel.id}`,
-                    );
-                    await updateHotel(hotel.id, {
-                        image: uploadedHotelUrls[0] ?? null,
-                        album: uploadedHotelUrls.slice(1),
-                    });
+                // 1. 上传酒店封面 + 相册
+                setSubmitStep('正在上传酒店图片...');
+                const hotelImgDataUrls = (values.hotelImages as UploadedImage[] ?? [])
+                    .map(img => img.remoteUrl ?? img.dataUrl);
+                const uploadedHotelUrls = await uploadHotelImages(hotelImgDataUrls, tempFolder);
 
-                    if (values.roomTypes?.length > 0) {
-                        setSubmitStep('正在上传房型图片...');
-                        const roomTypesData = await Promise.all(
-                            values.roomTypes.map(async (room: HotelRoomTypes & { images?: UploadedImage[] }, index: number) => {
-                                const roomImgDataUrls = (room.images ?? []).map(img => {
-                                    const i = img as unknown as UploadedImage;
-                                    return i.remoteUrl ?? i.dataUrl;
-                                });
-                                const uploadedRoomUrls = await uploadHotelImages(
-                                    roomImgDataUrls,
-                                    `hotel_${hotel.id}/room_${index}`,
-                                );
-                                return {
-                                    hotel_id: hotel.id,
-                                    name: room.name || '',
-                                    price: room.price,
-                                    size: room.size,
-                                    quantity: room.quantity,
-                                    max_guests: room.max_guests,
-                                    beds: room.beds ?? [],
-                                    facilities: room.facilities ?? [],
-                                    description: room.description || '',
-                                    images: uploadedRoomUrls,
-                                };
-                            })
+                // 2. 上传各房型图片
+                setSubmitStep('正在上传房型图片...');
+                const roomTypesData = await Promise.all(
+                    (values.roomTypes ?? []).map(async (room: HotelRoomTypes & { images?: UploadedImage[] }, index: number) => {
+                        const roomImgDataUrls = (room.images ?? []).map(img => {
+                            const i = img as unknown as UploadedImage;
+                            return i.remoteUrl ?? i.dataUrl;
+                        });
+                        const uploadedRoomUrls = await uploadHotelImages(
+                            roomImgDataUrls,
+                            `${tempFolder}/room_${index}`,
                         );
-                        setSubmitStep('正在创建房型...');
-                        console.log('提交房型数据:', roomTypesData);
-                        await createRoomTypes(roomTypesData);
-                    }
+                        return {
+                            name: room.name || '',
+                            price: room.price,
+                            size: room.size,
+                            max_guests: room.max_guests,
+                            quantity: room.quantity,
+                            beds: room.beds ?? [],
+                            facilities: room.facilities ?? [],
+                            description: room.description || '',
+                            images: uploadedRoomUrls,
+                        };
+                    })
+                );
 
-                    toast.success(okStatus === 'draft' ? '草稿已保存' : '提交成功');
-                    setModalVisible(false);
-                    if (onCreated) onCreated();
-                    form.resetFields();
-                } else {
-                    toast.error('创建失败');
-                }
+                // 3. RPC 事务创建酒店 + 房型
+                setSubmitStep('正在创建酒店...');
+                await createHotelWithRooms(
+                    { ...hotelData, image: uploadedHotelUrls[0] ?? null, album: uploadedHotelUrls.slice(1) },
+                    roomTypesData,
+                );
             }
+
+            toast.success(okStatus === 'draft' ? '草稿已保存' : (initialData ? '更新成功' : '提交成功'));
+            setModalVisible(false);
+            if (onCreated) onCreated();
+            form.resetFields();
+
         } catch (error) {
+            // form.validate() 验证不通过时抛出带 errors 属性的对象，表单已有内联提示
+            if (error && typeof error === 'object' && 'errors' in error) {
+                toast.warning('请检查表单填写是否完整');
+                return;
+            }
             console.error('创建/更新失败:', error);
             const message = error instanceof Error ? error.message : '未知错误';
             toast.error(`操作失败：${message}`);

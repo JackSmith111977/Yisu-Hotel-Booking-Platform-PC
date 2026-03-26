@@ -4,9 +4,11 @@ import StatusEChart from "@/components/hotel/StatusEChart";
 import { useMemo } from "react";
 import { useHotels } from "@/hooks/useHotels";
 import { Card } from "@arco-design/web-react";
+import { useUserStore } from "@/store/useUserStore";
 
 export default function DashboardPage() {
   const { hotels: allData, isLoading } = useHotels();
+  const userId = useUserStore((state) => state.user?.id);
 
   // 审核状态
   const auditData = useMemo(() => [
@@ -40,7 +42,7 @@ export default function DashboardPage() {
     [allData]
   );
 
-  if (isLoading) return (
+  if (isLoading || !userId) return (
     // 骨架屏
     <Card style={{ height: "100vh" }}>
       <div className="animate-pulse bg-gray-200 dark:bg-gray-700 rounded" style={{ height: 40, marginBottom: 24 }} />

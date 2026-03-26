@@ -1,10 +1,20 @@
 "use server";
 import { supabase_admin } from "@/lib/supabase_admin";
+import { createClient } from "@supabase/supabase-js";
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { validateEmail, validatePassword, generateVerifyCode, validateRole } from "@/lib/validate";
 
 import { sendRegisterVerifyEmail } from "@/lib/email";
+
+// 每次调用创建独立的 auth 客户端，避免污染 supabase_admin 单例的 session 状态
+function createAuthClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  );
+}
 
 // 通用返回类型
 type BaseResponse = {
@@ -189,8 +199,8 @@ export async function completeRegister(formData: {
       return { success: false, message: roleCheck.message };
     }
 
-    // 创建Supabase用户
-    const { data, error } = await supabase_admin.auth.signUp({
+    // 创建Supabase用户（使用独立客户端，避免污染 supabase_admin 单例的 session）
+    const { data, error } = await createAuthClient().auth.signUp({
       email,
       password,
       options: {
@@ -300,8 +310,8 @@ export async function loginWithJWT(formData: {
       userRole = userData.role;
     }
 
-    // 密码验证 + 获取JWT Token
-    const { data, error } = await supabase_admin.auth.signInWithPassword({
+    // 密码验证 + 获取JWT Token（使用独立客户端，避免污染 supabase_admin 单例的 session）
+    const { data, error } = await createAuthClient().auth.signInWithPassword({
       email,
       password,
     });
@@ -324,12 +334,21 @@ export async function loginWithJWT(formData: {
       .from("users")
       .select("username")
       .eq("email", email)
-      .single();
+      .maybeSingle();
+
+    // 服务端写 HttpOnly Cookie，token 不返回给客户端
+    const cookieStore = await cookies();
+    cookieStore.set("auth_token", data.session.access_token, {
+      httpOnly: true,
+      path: "/",
+      maxAge: 86400,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    });
 
     return {
       success: true,
       message: "登录成功",
-      token: data.session.access_token,
       user: {
         id: data.user.id,
         username: userInfo?.username || "",
