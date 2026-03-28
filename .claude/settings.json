@@ -1,0 +1,53 @@
+{
+  "env": {
+    "NEXT_PUBLIC_SUPABASE_URL": "",
+    "NEXT_PUBLIC_SUPABASE_ANON_KEY": ""
+  },
+  "skills": [
+    "update-config",
+    "simplify",
+    "claude-api"
+  ],
+  "mcp": {},
+  "context": {
+    "fileRules": [
+      {
+        "glob": "**/*.env*",
+        "includeInContext": false
+      },
+      {
+        "glob": "**/*.key",
+        "includeInContext": false
+      },
+      {
+        "glob": "node_modules/**",
+        "includeInContext": false
+      },
+      {
+        "glob": ".next/**",
+        "includeInContext": false
+      },
+      {
+        "glob": "coverage/**",
+        "includeInContext": false
+      }
+    ]
+  },
+  "hooks": {
+    "beforeSave": {
+      "description": "保存时自动检查代码规范",
+      "commands": [
+        "npm run lint -- --fix"
+      ]
+    },
+    "beforeCommand": {
+      "description": "提交前运行测试",
+      "commands": [
+        "npm run test"
+      ]
+    }
+  },
+  "history": {
+    "maxSize": 100000
+  }
+}
